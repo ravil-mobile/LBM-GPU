@@ -3,6 +3,7 @@ from boundary_conditions import *
 from parameters import SimulationParametes as parameters
 from parameters import Constants as constants
 
+
 def scanning(flag_field):
 
     fluid_flag = constants.flags["fluid"]

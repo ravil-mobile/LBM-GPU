@@ -2,6 +2,7 @@ from helper import *
 from parameters import SimulationParametes as parameters
 from parameters import Constants as constants
 
+
 def update_population_field(velocity, population, density):
 
     dim = parameters.dimension

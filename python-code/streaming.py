@@ -2,6 +2,7 @@ from helper import *
 from parameters import SimulationParametes as parameters
 from parameters import Constants as constants
 
+
 def stream(population, swap_buffer, stream_funcs):
 
     height = parameters.height
