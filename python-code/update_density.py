@@ -1,14 +1,23 @@
 from helper import *
 
+
 def update_density_field(density, population, update_functions, parameters):
+
+    num_directions = parameters["discretization"]
+
+    height = parameters["height"]
+    width = parameters["width"]
+
     # call update functions according the boundary conditions
-    for i in range(parameters["height"]):
-        for j in range(parameters["width"]):
+    for j in range(height):
+        for i in range(width):
             scalar_index = get_index(i, j, parameters, dim=1)
-            vector_population_index = parameters["discretization"] * scalar_index
+
+            vector_population_index = num_directions * scalar_index
+
             density[scalar_index] = update_functions[scalar_index](vector_population_index,
                                                                    population,
-                                                                   parameters["discretization"])
+                                                                   num_directions)
 
 
 def update_density_fluid_cell(index, population, num_directions):
