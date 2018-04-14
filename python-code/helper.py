@@ -1,5 +1,4 @@
-import numpy as np
+from parameters import SimulationParametes as parameters
 
-
-def get_index(index_i, index_j, param, dim):
-    return dim * (index_i + index_j * param["width"])
+def get_index(index_i, index_j, dim):
+    return dim * (index_i + index_j * parameters.width)

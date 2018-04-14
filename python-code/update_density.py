@@ -1,17 +1,18 @@
 from helper import *
+from parameters import SimulationParametes as parameters
 
 
-def update_density_field(density, population, update_functions, parameters):
+def update_density_field(density, population, update_functions):
 
-    num_directions = parameters["discretization"]
+    num_directions = parameters.discretization
 
-    height = parameters["height"]
-    width = parameters["width"]
+    height = parameters.height
+    width = parameters.width
 
     # call update functions according the boundary conditions
     for j in range(height):
         for i in range(width):
-            scalar_index = get_index(i, j, parameters, dim=1)
+            scalar_index = get_index(i, j, dim=1)
 
             vector_population_index = num_directions * scalar_index
 
