@@ -49,7 +49,6 @@ def scanning(flag_field, flags, coords, parameters):
                         elif neighbour_flag == flags["outflow"]:
                             function = apply_outflow_bc
 
-
                         boundary_lattice = (component, function)
 
                         # add boundary lattice to the set
@@ -57,7 +56,6 @@ def scanning(flag_field, flags, coords, parameters):
                             container[scalar_neighbour_index].append(boundary_lattice)
                         else:
                             container[scalar_neighbour_index] = [boundary_lattice]
-
 
     num_bloundaries = len(container.keys())
     boundary_coordinates = [0] * num_bloundaries

@@ -35,13 +35,13 @@ def update_population_field(velocity, population, density, coords, weights, cons
                 vector_component_y = coords[dim * component + 1]
 
                 # Compute velocity expantion for a particular direction within the lattice
-                dot_product_CU = vector_component_x * velocity[vector_velocity_index] \
-                               + vector_component_y * velocity[vector_velocity_index + 1]
+                dot_product_CU = (vector_component_x * velocity[vector_velocity_index] +
+                                  vector_component_y * velocity[vector_velocity_index + 1])
 
-                velocity_expansion = const_1 * dot_product_CU \
-                                   + const_2 * dot_product_CU * dot_product_CU \
-                                   - const_3 * dot_product_UU \
-                                   + 1.0
+                velocity_expansion = (const_1 * dot_product_CU +
+                                      const_2 * dot_product_CU * dot_product_CU -
+                                      const_3 * dot_product_UU +
+                                      1.0)
 
                 # Compute equilibrium distribution
                 equilibrium = weights[component] * density[scalar_index] * velocity_expansion

@@ -1,5 +1,6 @@
 from helper import *
 
+
 def stream(population, swap_buffer, coords, stream_funcs, parameters):
 
     height = parameters["height"]

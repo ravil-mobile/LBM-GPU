@@ -1,5 +1,6 @@
 from helper import *
 
+
 def update_velocity_field(velocity, population, density, coords, update_functions, parameters):
 
     dim = parameters["dimension"]

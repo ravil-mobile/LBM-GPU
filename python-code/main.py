@@ -3,12 +3,10 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import time
 
-from helper import *
 from update_density import *
 from update_velocity import *
 from update_population import *
 from streaming import *
-from boundary_conditions import *
 from scanning_boundaries import *
 
 # NOTATION:
@@ -71,25 +69,25 @@ def main():
 
     # INFO: keep coordinate as 1D array instead of 2D
     # to speed up computations of dot products
-    coords = np.array([ 0,  0,   #0
-                        1,  0,   #1
-                        0,  1,   #2
-                       -1,  0,   #3
-                        0, -1,   #4
-                        1,  1,   #5
-                       -1,  1,   #6
-                       -1, -1,   #7
-                        1, -1])  #8
+    coords = np.array([ 0,  0,   # 0
+                        1,  0,   # 1
+                        0,  1,   # 2
+                       -1,  0,   # 3
+                        0, -1,   # 4
+                        1,  1,   # 5
+                       -1,  1,   # 6
+                       -1, -1,   # 7
+                        1, -1])  # 8
 
-    weights = np.array([4.0 / 9.0,   #0
-                        1.0 / 9.0,   #1
-                        1.0 / 9.0,   #2
-                        1.0 / 9.0,   #3
-                        1.0 / 9.0,   #4
-                        1.0 / 36.0,  #5
-                        1.0 / 36.0,  #6
-                        1.0 / 36.0,  #7
-                        1.0 / 36.0]) #8
+    weights = np.array([4.0 / 9.0,    # 0
+                        1.0 / 9.0,    # 1
+                        1.0 / 9.0,    # 2
+                        1.0 / 9.0,    # 3
+                        1.0 / 9.0,    # 4
+                        1.0 / 36.0,   # 5
+                        1.0 / 36.0,   # 6
+                        1.0 / 36.0,   # 7
+                        1.0 / 36.0])  # 8
 
     inverse_indices = np.array([0, 3, 4, 1, 2, 7, 8, 5, 6])
 
@@ -112,7 +110,6 @@ def main():
                            update_velocity_funcs,
                            stream_funcs,
                            param)
-
 
     init_cavity_population_field(population, weights, param)
 
@@ -141,7 +138,6 @@ def main():
                          precomputed_constants,
                          param)
 
-
         # swap buffers
         temp = population
         population = swap_buffer
@@ -152,21 +148,18 @@ def main():
         update_velocity_field(velocity, population, density, coords, update_velocity_funcs, param)
         update_population_field(velocity, population, density, coords, weights, precomputed_constants, param)
 
-
-        #display_scalar_field(field=density, figure=fig, axis=ax, dim=1, parameters=param, shift=0)
-        #display_vector_magnitude_2d(field=velocity, figure=fig, axis=ax, parameters=param)
+        # display_scalar_field(field=density, figure=fig, axis=ax, dim=1, parameters=param, shift=0)
+        # display_vector_magnitude_2d(field=velocity, figure=fig, axis=ax, parameters=param)
         display_vector_field_2d(field=velocity, figure=fig, axis=ax, parameters=param)
         draw_obstacle(ax, param)
         plt.pause(0.01)
 
         print("iteration step: %i; density: max = %f; min = %f" % (step, np.max(density), np.min(density)))
 
-
-    elapsed_time = time.time()- start
+    elapsed_time = time.time() - start
     MLUPS = (param["num_lattices"] * param["num_time_steps"]) / (elapsed_time * 1e6)
     print("MLUPS: ", MLUPS)
     print("elapsed time", elapsed_time)
-
 
 
 def treat_boundaries(boundaries,
@@ -239,7 +232,6 @@ def init_cavity_flag_field(field, flags, update_funcs, update_velocity_funcs, st
         update_velocity_funcs[index] = update_velocity_bc_cell
         stream_funcs[index] = stream_fluid_bc
 
-
     for j in range(parameters["obstacle"][2], parameters["obstacle"][3]):
         for i in range(parameters["obstacle"][0], parameters["obstacle"][1]):
 
@@ -270,7 +262,7 @@ def display_scalar_field(field, figure, axis, parameters, dim=1, shift=0):
         for i in range(parameters["width"]):
             screen[j][i] = field[get_index(i, j, parameters, dim) + shift]
 
-    img = axis.imshow(screen, origin='lower')
+    axis.imshow(screen, origin='lower')
 
 
 def display_vector_magnitude_2d(field, figure, axis, parameters):
@@ -310,12 +302,11 @@ def draw_obstacle(axis, parameters):
     width = parameters["obstacle"][1] - parameters["obstacle"][0]
     height = parameters["obstacle"][3] - parameters["obstacle"][2]
     axis.add_patch(
-        patches.Rectangle( (x_origin, y_origin),  # (x,y)
-                           width,  # width
-                           height,  # height
-                           fill=False
-        )
-    )
+        patches.Rectangle((x_origin, y_origin),
+                          width,
+                          height,
+                          fill=False))
+
 
 def print_dict(dictionary):
     print("parameters of the problem:")
