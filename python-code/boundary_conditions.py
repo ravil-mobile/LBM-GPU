@@ -50,7 +50,6 @@ def apply_mov_wall_bc(component,
                       velocity,
                       density):
 
-
     # Compute inverse coordinate
     i = -1 * constants.coords[parameters.dimension * component]
     j = -1 * constants.coords[parameters.dimension * component + 1]
@@ -66,11 +65,11 @@ def apply_mov_wall_bc(component,
 
     self_index = coordinate + component
     neightbour_index = coordinate + shift + inverse_component
-    scalar_sneightbour_index = (coordinate + shift) // parameters.discretization
+    scalar_neightbour_index = (coordinate + shift) // parameters.discretization
 
     population[neightbour_index] = (population[self_index] +
                                     (2.0 * constants.weights[component] *
-                                     density[scalar_sneightbour_index] *
+                                     density[scalar_neightbour_index] *
                                      dot_product_CU))
 
 

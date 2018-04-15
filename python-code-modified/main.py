@@ -36,7 +36,7 @@ def main():
 
     # initialization of input parameters, configuration and constants
     parameters.simulation_time = 1.0
-    parameters.num_time_steps = 50
+    parameters.num_time_steps = 5000
     parameters.dimension = 2
     parameters.discretization = 9
 
@@ -134,12 +134,11 @@ def main():
         update_population_field(velocity, population, density)
         update_population_time += (time.time() - start_function_call)
 
-        # display_scalar_field(field=density, figure=fig, axis=ax, dim=1, shift=0)
+        #display_scalar_field(field=density, figure=fig, axis=ax, dim=1, shift=0)
         # display_vector_magnitude_2d(field=velocity, figure=fig, axis=ax)
         display_vector_field_2d(field=velocity, figure=fig, axis=ax)
         draw_obstacle(ax)
         plt.pause(0.01)
-
 
         print("iteration step: %i; density: max = %f; min = %f" % (step, np.max(density), np.min(density)))
 
@@ -166,16 +165,18 @@ def treat_boundaries(boundaries,
                      density):
 
     num_components = parameters.discretization
+    num_boundaries = len(boundary_coordinates)
 
-    for counter, boundary_function in enumerate(boundaries):
-        component = counter % num_components
-        scalar_counter = counter // num_components
+    for component in range(num_components):
+        for scalar_counter in range(num_boundaries):
 
-        boundary_function(component,
-                          boundary_coordinates[scalar_counter],
-                          population,
-                          velocity,
-                          density)
+            shift = component * num_boundaries
+
+            boundaries[scalar_counter + shift](component,
+                                               boundary_coordinates[scalar_counter],
+                                               population,
+                                               velocity,
+                                               density)
 
 
 def init_cavity_flag_field(field, update_funcs, update_velocity_funcs, stream_funcs):
@@ -230,15 +231,12 @@ def init_cavity_flag_field(field, update_funcs, update_velocity_funcs, stream_fu
 def init_cavity_population_field(population, swap_buffer):
 
     num_components = parameters.discretization
+    num_lattices = parameters.num_lattices
 
-    for j in range(parameters.height):
-        for i in range(parameters.width):
-            vector_population_index = get_index(i, j, dim=num_components)
-
-            for component in range(num_components):
-                population[vector_population_index + component] = constants.weights[component]
-                swap_buffer[vector_population_index + component] = constants.weights[component]
-
+    for component in range(num_components):
+        for lattice in range(num_lattices):
+            population[component * num_lattices + lattice] = constants.weights[component]
+            swap_buffer[component * num_lattices + lattice] = constants.weights[component]
 
 def display_scalar_field(field, figure, axis, dim=1, shift=0):
 
@@ -272,12 +270,15 @@ def display_vector_field_2d(field, figure, axis):
     V = np.zeros((parameters.height, parameters.width))
     R = np.zeros((parameters.height, parameters.width))
 
+    num_lattices = parameters.num_lattices
+
     for j in range(parameters.height):
         for i in range(parameters.width):
-            index = get_index(i, j, dim=2)
-            R[j][i] = np.sqrt(field[index] * field[index] + field[index + 1] * field[index + 1])
+            index = get_index(i, j, dim=1)
+            R[j][i] = np.sqrt(field[index] * field[index] +
+                              field[index + num_lattices] * field[index + num_lattices])
             U[j][i] = field[index]
-            V[j][i] = field[index + 1]
+            V[j][i] = field[index + num_lattices]
 
     axis.quiver(Y, X, U, V, R, alpha=.5)
 
