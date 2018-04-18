@@ -3,3 +3,8 @@ python-code/.idea
 
 python-code-modified/__pycache__
 python-code-modified/.idea
+
+experements
+*.swp
+
+equential-LNB/build/*

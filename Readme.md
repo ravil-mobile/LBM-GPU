@@ -1,1 +1,1 @@
-1. Prepare 2d base line running on CPU
+1. Prepare 2d baseline running on CPU
