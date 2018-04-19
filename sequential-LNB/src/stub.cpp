@@ -2,8 +2,8 @@
 #include "parameters.h"
 #include "stub.h"
 
-void ReadInputFilesStub(char* parameter_file,
-                        char* boundary_file) {
+void ReadInputFilesStub(char *parameter_file,
+                        char *boundary_file) {
     InitParametersStub();
     InitBoundaryConditionStub();
 }

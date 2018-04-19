@@ -17,13 +17,15 @@ struct SimulationParametes {
     unsigned width;
     unsigned height;
     unsigned num_lattices;
-} parameters;
+};
+extern struct SimulationParametes parameters;
 
 struct Constants {
     real one;
     real two;
     real three;
-} constants;
+};
+extern struct Constants constants;
 
 struct BoundaryInfo {
     real wall_velocity_x;
@@ -34,7 +36,8 @@ struct BoundaryInfo {
     real density_outflow;
     real velocity_outflow_x;
     real velocity_outflow_y;
-} boundary_info;
+};
+extern struct BoundaryInfo boundary_info;
 
 enum flags {FLUID, WALL, MOVING_WALL, INFLOW, OUTFLOW};
 extern int coords[];

@@ -1,5 +1,9 @@
 #include "parameters.h"
 
+struct SimulationParametes parameters;
+struct Constants constants;
+struct BoundaryInfo boundary_info;
+
 int coords[] = {0, 1, 0, -1,  0, 1, -1, -1,  1,
                 0, 0, 1,  0, -1, 1,  1, -1, -1};
 
