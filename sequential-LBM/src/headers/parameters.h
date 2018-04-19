@@ -5,18 +5,18 @@ typedef double real;
 
 struct SimulationParametes {
     real simulation_time;
-    unsigned num_time_steps;
-    unsigned dimension;
-    unsigned discretization;
+    int num_time_steps;
+    int dimension;
+    int discretization;
     real delta_x;
     real delta_t;
     real speed_of_sound;
     real viscosity;
     real tau;
     real relaxation;
-    unsigned width;
-    unsigned height;
-    unsigned num_lattices;
+    int width;
+    int height;
+    int num_lattices;
 };
 extern struct SimulationParametes parameters;
 

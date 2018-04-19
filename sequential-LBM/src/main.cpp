@@ -3,10 +3,10 @@
 #include "headers/parameters.h"
 #include "headers/init.h"
 #include "headers/stub.h"
-
-typedef void (*func_ptr)();
-
-void dummy() {};
+#include "headers/collision.h"
+#include "headers/stream.h"
+#include "headers/scanning.h"
+#include "headers/boundary_conditions.h"
 
 int main() {
     char parameter_file[] = "parameter.txt";
@@ -22,17 +22,38 @@ int main() {
     real *population = (real*)calloc(parameters.discretization * parameters.num_lattices, sizeof(real));
     real *swap_buffer = (real*)calloc(parameters.discretization * parameters.num_lattices, sizeof(real));
 
-    init_array<real>(density, 1.0, parameters.num_lattices);
-    init_population_field(population);
-    init_population_field(swap_buffer);
+    InitArray<real>(density, 1.0, parameters.num_lattices);
+    InitPopulationField(population);
+    InitPopulationField(swap_buffer);
 
-    InitFlagField(flag_field, grid_file);
+    ptr_update_func *update_density = (ptr_update_func*)calloc(parameters.num_lattices, 
+                                                               sizeof(ptr_update_func));
+    
+    ptr_update_func *update_velocity = (ptr_update_func*)calloc(parameters.num_lattices,
+                                                                sizeof(ptr_update_func));
+
+    ptr_stream_func *stream_element = (ptr_stream_func*)calloc(parameters.num_lattices,
+                                                                sizeof(ptr_stream_func));
+    
+    InitArray<ptr_update_func>(update_density, UpdateDensityFluid, parameters.num_lattices);
+    InitArray<ptr_update_func>(update_velocity, UpdateVelocityFluid, parameters.num_lattices);
+    InitArray<ptr_stream_func>(stream_element, StreamFluid, parameters.num_lattices);
+    
+    InitFlagFieldStub(flag_field, grid_file);
+    
+
+    ptr_boundary_func *boundary_update = 0;
+    int *boundary_coords = 0;
+
+    ScanFlagField(flag_field,
+                  &boundary_update,
+                  &boundary_coords);
 
 
-    func_ptr *functions = (func_ptr*)calloc(parameters.num_lattices, sizeof(func_ptr));
-    init_array<func_ptr>(functions, dummy, parameters.num_lattices);
 
     printf("num of lattices: %i\n", parameters.num_lattices);
+
+
 
     free(flag_field);
     free(density);
@@ -40,6 +61,10 @@ int main() {
     free(population);
     free(swap_buffer);
 
-    // free(functions);
+    free(update_density);
+    free(update_velocity);
+    free(stream_element);
+    free(boundary_update);
+    free(boundary_coords);
     return 0;
 }

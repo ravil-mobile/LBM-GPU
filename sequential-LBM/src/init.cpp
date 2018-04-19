@@ -2,22 +2,22 @@
 #include "headers/parameters.h"
 #include "headers/helper.h"
 
-void init_population_field(real* population) {
-    unsigned shift = 0;
+void InitPopulationField(real* population) {
+    int shift = 0;
 
-    for (unsigned component = 0; component < parameters.discretization; ++component) {
+    for (int component = 0; component < parameters.discretization; ++component) {
         shift = parameters.num_lattices * component;
-        for (unsigned i = 0; i < parameters.num_lattices; ++i) {
+        for (int i = 0; i < parameters.num_lattices; ++i) {
             population[i + shift] = weights[component];
         }
     }
 }
 
-void InitFlagField(int* flag_field, char* grid_file) {
-    unsigned most_left_index = 0;
-    unsigned most_right_index = parameters.width - 1;
+void InitFlagFieldStub(int* flag_field, char* grid_file) {
+    int most_left_index = 0;
+    int most_right_index = parameters.width - 1;
 
-    unsigned dim = 1;
+    int dim = 1;
     int index = 0;
 
     for (int i = 0; i < parameters.height; ++i) {
