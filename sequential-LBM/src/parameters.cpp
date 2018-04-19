@@ -1,4 +1,4 @@
-#include "parameters.h"
+#include "headers/parameters.h"
 
 struct SimulationParametes parameters;
 struct Constants constants;

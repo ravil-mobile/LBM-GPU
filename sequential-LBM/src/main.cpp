@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "parameters.h"
-#include "init.h"
-#include "stub.h"
+#include "headers/parameters.h"
+#include "headers/init.h"
+#include "headers/stub.h"
 
 typedef void (*func_ptr)();
 
@@ -26,17 +26,20 @@ int main() {
     init_population_field(population);
     init_population_field(swap_buffer);
 
+    InitFlagField(flag_field, grid_file);
+
+
     func_ptr *functions = (func_ptr*)calloc(parameters.num_lattices, sizeof(func_ptr));
     init_array<func_ptr>(functions, dummy, parameters.num_lattices);
 
     printf("num of lattices: %i\n", parameters.num_lattices);
-        
+
     free(flag_field);
     free(density);
     free(velocity);
     free(population);
     free(swap_buffer);
 
-    //free(functions);
+    // free(functions);
     return 0;
 }

@@ -1,5 +1,5 @@
-#ifndef SEQUENTIAL_LNB_PARAMETERS_H_
-#define SEQUENTIAL_LNB_PARAMETERS_H_
+#ifndef SEQUENTIAL_LBM_SRC_HEADERS_PARAMETERS_H_
+#define SEQUENTIAL_LBM_SRC_HEADERS_PARAMETERS_H_
 
 typedef double real;
 
@@ -42,6 +42,7 @@ extern struct BoundaryInfo boundary_info;
 enum flags {FLUID, WALL, MOVING_WALL, INFLOW, OUTFLOW};
 extern int coords[];
 extern real weights[];
-extern int inverse_indices[]; 
+extern int inverse_indices[];
 
-#endif  // SEQUENTIAL_LNB_PARAMETERS_H_
+#endif  // SEQUENTIAL_LBM_SRC_HEADERS_PARAMETERS_H_
+

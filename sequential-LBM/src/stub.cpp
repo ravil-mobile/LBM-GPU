@@ -1,6 +1,6 @@
 #include <math.h>
-#include "parameters.h"
-#include "stub.h"
+#include "headers/parameters.h"
+#include "headers/stub.h"
 
 void ReadInputFilesStub(char *parameter_file,
                         char *boundary_file) {
