@@ -17,16 +17,13 @@ void InitFlagFieldStub(int* flag_field, char* grid_file) {
     int most_left_index = 0;
     int most_right_index = parameters.width - 1;
 
-    int dim = 1;
-    int index = 0;
-
     for (int i = 0; i < parameters.height; ++i) {
         // init left wall
-        index = GetIndex(most_left_index, i, dim);
+        int index = GetIndex(most_left_index, i);
         flag_field[index] = WALL;
 
         // init right wall
-        index = GetIndex(most_right_index, i, dim);
+        index = GetIndex(most_right_index, i);
         flag_field[index] = WALL;
     }
 
@@ -34,12 +31,12 @@ void InitFlagFieldStub(int* flag_field, char* grid_file) {
     int top_index = parameters.height - 1;
     for (int i = 0; i < parameters.width; ++i) {
         // init top (moving) wall
-        index = GetIndex(i, top_index, dim);
-        flag_field[i] = MOVING_WALL;
+        int index = GetIndex(i, top_index);
+        flag_field[index] = MOVING_WALL;
 
         // init bottom wall
-        index = GetIndex(i, bottom_index, dim);
-        flag_field[i] = WALL;
+        index = GetIndex(i, bottom_index);
+        flag_field[index] = WALL;
     }
 
     int obstacle[] = {10, 15, 10, 15};

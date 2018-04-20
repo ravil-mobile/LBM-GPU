@@ -39,9 +39,9 @@ int main() {
     InitArray<ptr_update_func>(update_velocity, UpdateVelocityFluid, parameters.num_lattices);
     InitArray<ptr_stream_func>(stream_element, StreamFluid, parameters.num_lattices);
     
+
     InitFlagFieldStub(flag_field, grid_file);
     
-
     ptr_boundary_func *boundary_update = 0;
     int *boundary_coords = 0;
 

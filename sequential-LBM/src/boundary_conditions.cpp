@@ -2,7 +2,7 @@
 #include "headers/boundary_conditions.h"
 
 void TreatBoundary(ptr_boundary_func *boundary_func,
-                   int *boundary_coords
+                   int *boundary_coords,
                    real *population,
                    real *velocity,
                    real *density) {

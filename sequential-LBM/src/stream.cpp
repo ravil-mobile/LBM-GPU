@@ -2,7 +2,7 @@
 #include "headers/stream.h"
 
 void Stream(real *population,
-            real *swap_buffer, 
+            real *swap_buffer,
             ptr_stream_func *stream_element) {
 }
 
