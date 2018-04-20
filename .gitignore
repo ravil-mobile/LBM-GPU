@@ -7,3 +7,5 @@ python-code-modified/.idea
 experements
 *.swp
 sequential-LBM/build/
+sequential-LBM/debug/
+
