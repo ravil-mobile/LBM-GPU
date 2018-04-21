@@ -1,5 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <algorithm>
+#include <iostream>
+#include <stdio.h>
+#include <unistd.h>
+#include <time.h>
+
 #include "headers/parameters.h"
 #include "headers/init.h"
 #include "headers/stub.h"
@@ -7,12 +13,23 @@
 #include "headers/stream.h"
 #include "headers/scanning.h"
 #include "headers/boundary_conditions.h"
+#include "headers/gnuplot_i.h"
+#include "headers/helper.h"
 
 int main() {
     char parameter_file[] = "parameter.txt";
     char boundary_file[] = "boundary.txt";
     char grid_file[] = "grid.txt";
+   
+    gnuplot_ctrl * frame;
+    frame = gnuplot_init();
+    gnuplot_cmd(frame, "set xrange [0:80]");
+    gnuplot_cmd(frame, "set yrange [0:25]");
+    int steps_per_report = 1;
 
+    std::string output_file_name = "file.data";
+    char gnuplot_command[] = "plot 'file.data' using 1:2:3:4 with vectors head filled lt 2\n";    
+    
     ReadInputFilesStub(parameter_file,
                        boundary_file);
 
@@ -40,21 +57,76 @@ int main() {
     InitArray<ptr_stream_func>(stream_element, StreamFluid, parameters.num_lattices);
     
 
-    InitFlagFieldStub(flag_field, grid_file);
+    InitFlagFieldStub(flag_field, 
+                      update_density,
+                      update_velocity,
+                      stream_element,        
+                      grid_file);
     
+    int num_boundaries = 0;
     ptr_boundary_func *boundary_update = 0;
     int *boundary_coords = 0;
 
     ScanFlagField(flag_field,
                   &boundary_update,
-                  &boundary_coords);
+                  &boundary_coords,
+                  num_boundaries);
 
+    clock_t begin = clock();    
+    for (int time = 0; time < parameters.num_time_steps; ++time) {
+        Stream(population, swap_buffer, stream_element);
+        
+        TreatBoundary(boundary_update,
+                      boundary_coords,
+                      num_boundaries,
+                      swap_buffer,
+                      velocity,
+                      density);
+        
+        std::swap(population, swap_buffer);
+        
+        UpdateDensityField(density, population, update_density);
+        
+        UpdateVelocityField(velocity,
+                            population,
+                            density,
+                            update_velocity);
+        
+        
+        UpdatePopulationField(velocity,
+                              population,
+                              density); 
+                
+#ifdef DEBUG
+        real max_density = *std::max_element(density, 
+                                    density + parameters.num_lattices);
+        real min_density = *std::min_element(density, 
+                                density + parameters.num_lattices);
+       
 
+        std::cout << "time step: " << time << "; ";
+        std::cout << "max density: " << max_density << "; ";
+        std::cout << "min density "  << min_density << std::endl;
+#endif
 
-    printf("num of lattices: %i\n", parameters.num_lattices);
+#ifdef GRAPHICS
+        if ((time % steps_per_report) == 0) { 
+            WriteVectorFieldToFile(velocity, output_file_name);
+            gnuplot_cmd(frame,
+                        gnuplot_command);
+            usleep(10000);
+        }
+#endif
+    }
+    clock_t end = clock() - begin;
+    double consumed_time = (double)(end - begin) / CLOCKS_PER_SEC;
+    double MLUPS = ( parameters.num_lattices * parameters.num_time_steps) 
+                 / (consumed_time * 1e6 );
 
+    printf("MLUPS: %4.6f\n", MLUPS);
 
-
+    gnuplot_close(frame); 
+    
     free(flag_field);
     free(density);
     free(velocity);

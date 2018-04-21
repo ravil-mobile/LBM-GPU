@@ -6,6 +6,7 @@
 
 void ScanFlagField(int *flag_field,
                    ptr_boundary_func **boundary_update,
-                   int **boundary_coords);
+                   int **boundary_coords,
+                   int &num_boundaries);
 
 #endif  // SEQUENTIAL_LBM_SRC_HEADERS_SCANNING_H_

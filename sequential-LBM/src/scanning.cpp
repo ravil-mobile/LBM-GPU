@@ -4,7 +4,7 @@
 #include "headers/scanning.h"
 #include "headers/boundary_conditions.h"
 #include "headers/helper.h"
-#include <stdio.h>
+#include "headers/init.h"
 
 struct InfoBC {
     int component;
@@ -13,7 +13,8 @@ struct InfoBC {
 
 void ScanFlagField(int *flag_field,
                    ptr_boundary_func **boundary_update,
-                   int **boundary_coords) {
+                   int **boundary_coords,
+                   int &num_boundaries) {
     int num_directions = parameters.discretization;
     std::unordered_map<int, std::vector<struct InfoBC>> container;
 
@@ -29,7 +30,6 @@ void ScanFlagField(int *flag_field,
                     int scalar_neighbour_index = GetIndex(i + ii, j + jj);
                     int neighbour_flag = flag_field[scalar_neighbour_index];
                     
-
                     if (neighbour_flag != FLUID) {
                         struct InfoBC boundary_lattice;
                         boundary_lattice.component = component;
@@ -62,19 +62,25 @@ void ScanFlagField(int *flag_field,
         }
     }
 
-    int num_boundaries = container.size();
-    *boundary_coords = (int*)calloc(num_boundaries, sizeof(int));
-    *boundary_update = (ptr_boundary_func*)calloc(num_boundaries, sizeof(ptr_boundary_func));
+    num_boundaries = container.size();
+    (*boundary_coords) = (int*)calloc(num_boundaries, sizeof(int));
+    (*boundary_update) = (ptr_boundary_func*)calloc(num_boundaries * num_directions, 
+                                                    sizeof(ptr_boundary_func));
 
+    InitArray<ptr_boundary_func>(*boundary_update,
+                                 SkipBoundary,
+                                 num_boundaries * num_directions);
+    
     int counter = 0;
     for (auto iterator = container.begin(); iterator != container.end(); ++iterator) {
-        (*boundary_coords)[counter++] = iterator->first;
+        (*boundary_coords)[counter] = iterator->first;
         
         std::vector<struct InfoBC> vector = iterator->second;
 
-        for (auto element = vector.begin(); element > vector.end(); ++element) {
+        for (auto element = vector.begin(); element != vector.end(); ++element) {
             int shift = element->component * num_boundaries;
             (*boundary_update)[counter + shift] = element->function;
         }
+        ++counter;
     }
 }

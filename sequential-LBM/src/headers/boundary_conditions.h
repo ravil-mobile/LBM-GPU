@@ -5,8 +5,9 @@
 
 typedef void (*ptr_boundary_func)(int, int, real*, real*, real*);
 
-void TreatBoundary(ptr_boundary_func *boundary_func,
+void TreatBoundary(ptr_boundary_func *boundary_update,
                    int *boundary_coords,
+                   int num_boundaries,
                    real *population,
                    real *velocity,
                    real *density);
