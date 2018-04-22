@@ -111,6 +111,7 @@ int main() {
 
 #ifdef GRAPHICS
         if ((time % steps_per_report) == 0) { 
+            //DisplayResults(velocity, velocity_frame);
             DisplayResults(velocity, velocity_frame,
                            density, density_frame);
 

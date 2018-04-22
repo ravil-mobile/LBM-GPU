@@ -20,18 +20,21 @@ void InitParametersStub() {
     parameters.tau = 0.5 * (1.0 + 6.0 * (parameters.viscosity *
                                          parameters.delta_t) /
                                          pow(parameters.delta_x, 2.0));
+    
+    
+    
     parameters.relaxation = 1.0 / parameters.tau;
     parameters.width = 30;
     parameters.height = 30;
     parameters.num_lattices = parameters.width * parameters.height;
 
-    constants.one = 1.0 / pow(parameters.speed_of_sound, 2.0);
-    constants.two = 0.5 * pow(constants.one, 2.0);
+    constants.one = 1.0 / (parameters.speed_of_sound * parameters.speed_of_sound);
+    constants.two = 0.5 * constants.one * constants.one;
     constants.three = 0.5 * constants.one;
 }
 
 void InitBoundaryConditionStub() {
-    boundary_info.wall_velocity_x = 0.08;
+    boundary_info.wall_velocity_x = 0.05;
     boundary_info.wall_velocity_y = 0.00;
 
     boundary_info.density_inflow = 1.00;

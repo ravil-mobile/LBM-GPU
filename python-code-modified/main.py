@@ -36,7 +36,7 @@ def main():
 
     # initialization of input parameters, configuration and constants
     parameters.simulation_time = 1.0
-    parameters.num_time_steps = 5000
+    parameters.num_time_steps = 10000
     parameters.dimension = 2
     parameters.discretization = 9
 
@@ -135,13 +135,14 @@ def main():
         update_population_field(velocity, population, density)
         update_population_time += (time.time() - start_function_call)
 
-        #display_scalar_field(field=density, figure=fig, axis=ax, dim=1, shift=0)
-        # display_vector_magnitude_2d(field=velocity, figure=fig, axis=ax)
-        display_vector_field_2d(field=velocity, figure=fig, axis=ax)
-        draw_obstacle(ax)
-        plt.pause(0.01)
+        if step % 500 == 0 :
+            #display_scalar_field(field=density, figure=fig, axis=ax, dim=1, shift=0)
+            # display_vector_magnitude_2d(field=velocity, figure=fig, axis=ax)
+            display_vector_field_2d(field=velocity, figure=fig, axis=ax)
+            draw_obstacle(ax)
+            plt.pause(0.01)
 
-        print("iteration step: %i; density: max = %f; min = %f" % (step, np.max(density), np.min(density)))
+            print("iteration step: %i; density: max = %f; min = %f" % (step, np.max(density), np.min(density)))
 
     elapsed_time = time.time() - start
     MLUPS = (parameters.num_lattices * parameters.num_time_steps) / (elapsed_time * 1e6)

@@ -36,7 +36,7 @@ def main():
 
     # initialization of input parameters, configuration and constants
     parameters.simulation_time = 1.0
-    parameters.num_time_steps = 50
+    parameters.num_time_steps = 100000
     parameters.dimension = 2
     parameters.discretization = 9
 
@@ -47,11 +47,12 @@ def main():
     parameters.tau = 0.5 * (1 + (6.0 * parameters.viscosity * parameters.delta_t) / (parameters.delta_x**2))
     parameters.relaxation = 1.0 / parameters.tau
 
-    parameters.width = 80
-    parameters.height = 25
+    parameters.width = 30
+    parameters.height = 30
     parameters.num_lattices = parameters.width * parameters.height
 
-    parameters.obstacle = [10, 15, 10, 15]
+    #parameters.obstacle = [10, 15, 10, 15]
+    parameters.obstacle = [0, 0, 0, 0]
 
     boundary_info.wall_velocity = [0.05, 0.0]
 
@@ -134,14 +135,15 @@ def main():
         update_population_field(velocity, population, density)
         update_population_time += (time.time() - start_function_call)
 
-        # display_scalar_field(field=density, figure=fig, axis=ax, dim=1, shift=0)
-        # display_vector_magnitude_2d(field=velocity, figure=fig, axis=ax)
-        display_vector_field_2d(field=velocity, figure=fig, axis=ax)
-        draw_obstacle(ax)
-        plt.pause(0.01)
+        if (step % 250) == 0 :
+            # display_scalar_field(field=density, figure=fig, axis=ax, dim=1, shift=0)
+            # display_vector_magnitude_2d(field=velocity, figure=fig, axis=ax)
+            display_vector_field_2d(field=velocity, figure=fig, axis=ax)
+            draw_obstacle(ax)
+            plt.pause(0.01)
 
 
-        print("iteration step: %i; density: max = %f; min = %f" % (step, np.max(density), np.min(density)))
+            print("iteration step: %i; density: max = %f; min = %f" % (step, np.max(density), np.min(density)))
 
     elapsed_time = time.time() - start
     MLUPS = (parameters.num_lattices * parameters.num_time_steps) / (elapsed_time * 1e6)
@@ -187,14 +189,14 @@ def init_cavity_flag_field(field, update_funcs, update_velocity_funcs, stream_fu
 
         # init left wall
         index = get_index(index_i=most_left_index, index_j=j, dim=1)
-        field[index] = constants.flags["inflow"]
+        field[index] = constants.flags["wall"]
         update_funcs[index] = update_density_bc_cell
         update_velocity_funcs[index] = update_velocity_bc_cell
         stream_funcs[index] = stream_fluid_bc
 
         # init right wall
         index = get_index(index_i=most_right_index, index_j=j, dim=1)
-        field[index] = constants.flags["outflow"]
+        field[index] = constants.flags["wall"]
         update_funcs[index] = update_density_bc_cell
         update_velocity_funcs[index] = update_velocity_bc_cell
         stream_funcs[index] = stream_fluid_bc
@@ -205,7 +207,7 @@ def init_cavity_flag_field(field, update_funcs, update_velocity_funcs, stream_fu
     for i in range(parameters.width):
         # init top (moving) wall
         index = get_index(index_i=i, index_j=top_index, dim=1)
-        field[index] = constants.flags["wall"]
+        field[index] = constants.flags["mov_wall"]
         update_funcs[index] = update_density_bc_cell
         update_velocity_funcs[index] = update_velocity_bc_cell
         stream_funcs[index] = stream_fluid_bc

@@ -54,7 +54,7 @@ void ScanFlagField(int *flag_field,
                         } else {
                             std::vector<struct InfoBC> vector;
                             container[scalar_neighbour_index] = vector;
-                            container[scalar_self_index].push_back(boundary_lattice);
+                            container[scalar_neighbour_index].push_back(boundary_lattice);
                         }
                     }   
                 }

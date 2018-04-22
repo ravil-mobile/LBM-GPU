@@ -37,9 +37,9 @@ void SetupGnuPlots(gnuplot_ctrl *velocity_frame,
 
 
     GnuplotCmd(density_frame, "set palette rbg 33,13,10");
-    GnuplotCmd(density_frame, "set view map");
-    GnuplotCmd(density_frame, "set pm3d at b map");
-    GnuplotCmd(density_frame, "set cbrange [0.7:1.3]");
+//    GnuplotCmd(density_frame, "set view map");
+//    GnuplotCmd(density_frame, "set pm3d at b map");
+//    GnuplotCmd(density_frame, "set cbrange [0.7:1.3]");
 
 }
 
@@ -74,7 +74,7 @@ void DisplayResults(real *velocity, gnuplot_ctrl *velocity_frame,
                               << magnitude << delimiter
                               << std::endl;
             
-            if (density != 0) {            
+            if (density != NULL) {            
                 scalar_field_file << real(i) << delimiter
                                   << real(j) << delimiter
                                   << density[index] << delimiter
@@ -89,7 +89,7 @@ void DisplayResults(real *velocity, gnuplot_ctrl *velocity_frame,
     GnuplotCmd(velocity_frame,
                 "plot 'velocity-data.dat' using 1:2:3:4:5 with vectors head filled lc palette");
             
-    if (density_frame != 0) {
+    if (density_frame != NULL) {
         GnuplotCmd(density_frame, "splot 'density-data.dat' u 1:2:3");
     }
     usleep(10000);
