@@ -3,7 +3,6 @@
 #include <algorithm>
 #include <iostream>
 #include <stdio.h>
-#include <unistd.h>
 #include <time.h>
 
 #include "headers/parameters.h"
@@ -20,18 +19,19 @@ int main() {
     char parameter_file[] = "parameter.txt";
     char boundary_file[] = "boundary.txt";
     char grid_file[] = "grid.txt";
-   
-    gnuplot_ctrl * frame;
-    frame = gnuplot_init();
-    gnuplot_cmd(frame, "set xrange [0:80]");
-    gnuplot_cmd(frame, "set yrange [0:25]");
-    int steps_per_report = 1;
-
-    std::string output_file_name = "file.data";
-    char gnuplot_command[] = "plot 'file.data' using 1:2:3:4 with vectors head filled lt 2\n";    
-    
     ReadInputFilesStub(parameter_file,
                        boundary_file);
+   
+    gnuplot_ctrl *velocity_frame;
+    gnuplot_ctrl *density_frame;
+
+    velocity_frame = gnuplot_init();
+    density_frame = gnuplot_init();
+
+    SetupGnuPlots(velocity_frame, density_frame);
+
+    int steps_per_report = 10;
+
 
     int *flag_field = (int*)calloc(parameters.num_lattices, sizeof(int));
     real *density = (real*)calloc(parameters.num_lattices, sizeof(real));
@@ -111,10 +111,9 @@ int main() {
 
 #ifdef GRAPHICS
         if ((time % steps_per_report) == 0) { 
-            WriteVectorFieldToFile(velocity, output_file_name);
-            gnuplot_cmd(frame,
-                        gnuplot_command);
-            usleep(10000);
+            DisplayResults(velocity, velocity_frame,
+                           density, density_frame);
+
         }
 #endif
     }
@@ -125,8 +124,9 @@ int main() {
 
     printf("MLUPS: %4.6f\n", MLUPS);
 
-    gnuplot_close(frame); 
-    
+    gnuplot_close(velocity_frame); 
+    gnuplot_close(density_frame);
+
     free(flag_field);
     free(density);
     free(velocity);

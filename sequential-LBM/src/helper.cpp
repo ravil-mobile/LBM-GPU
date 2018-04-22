@@ -1,6 +1,11 @@
 #include <fstream>
 #include <string>
 #include <iomanip>
+#include <math.h>
+#include <unistd.h>
+#include <stdio.h>
+
+#include "headers/gnuplot_i.h"
 #include "headers/parameters.h"
 #include "headers/helper.h"
 
@@ -8,27 +13,84 @@ int GetIndex(int index_i, int index_j, int dim) {
     return dim * (index_i + index_j * parameters.width);
 }
 
+void GnuplotCmd(gnuplot_ctrl *frame, std::string command) {
+   gnuplot_cmd(frame, const_cast<char*>(command.c_str())); 
+};
 
-void WriteVectorFieldToFile(real *velocity, std::string file_name) {
+void SetupGnuPlots(gnuplot_ctrl *velocity_frame,
+                   gnuplot_ctrl *density_frame) {
+    
+    std::string command = "";
+
+    command = std::string("set xrange [0:") 
+            + std::to_string(parameters.width) 
+            + std::string("]"); 
+    GnuplotCmd(velocity_frame, command);
+
+    
+    command = std::string("set yrange [0:")
+            + std::to_string(parameters.height)
+            + std::string("]");
+    GnuplotCmd(velocity_frame, command);
+
+    GnuplotCmd(velocity_frame, "set cbrange [0.0:0.1]");
+
+
+    GnuplotCmd(density_frame, "set palette rbg 33,13,10");
+    GnuplotCmd(density_frame, "set view map");
+    GnuplotCmd(density_frame, "set pm3d at b map");
+    GnuplotCmd(density_frame, "set cbrange [0.7:1.3]");
+
+}
+
+void DisplayResults(real *velocity, gnuplot_ctrl *velocity_frame,
+                    real *density,  gnuplot_ctrl *density_frame) {
+    
     real delta_x = parameters.delta_x;
+    int num_lattices = parameters.num_lattices;
+
+    std::ofstream vector_field_file;
+    std::ofstream scalar_field_file;
+
+    vector_field_file.open("velocity-data.dat");
+    scalar_field_file.open("density-data.dat");
+    
+    vector_field_file << std::fixed << std::setprecision(6);
+    scalar_field_file << std::fixed << std::setprecision(6);
+
+
+    real scaling_factor = 40.0;
     std::string delimiter = "\t";
-    real scaling_factor = 50.0;
-
-    std::ofstream file;
-    file.open(file_name);
-    file << std::fixed << std::setprecision(6) << std::endl;
-    file << "# X    Y   delta_x    delta_y" << std::endl;
-
-    for (int j = 0; j < parameters.height; ++j) {
-        for (int i = 0; i < parameters.width; ++i) {
-            
+    for (int j = 1; j < parameters.height - 1; ++j) {
+        for (int i = 1; i < parameters.width - 1; ++i) {
             int index = GetIndex(i, j);
-            file << real(i) << delimiter 
-                 << real(j) << delimiter 
-                 << scaling_factor * velocity[index] << delimiter 
-                 << scaling_factor * velocity[index + parameters.num_lattices] << delimiter 
-                 << std::endl;
+            real magnitude = sqrt(velocity[index] * velocity[i]
+                           + velocity[index + num_lattices] * velocity[index + num_lattices]);
+
+            vector_field_file << real(i) << delimiter 
+                              << real(j) << delimiter 
+                              << scaling_factor * velocity[index] << delimiter 
+                              << scaling_factor * velocity[index + num_lattices] << delimiter 
+                              << magnitude << delimiter
+                              << std::endl;
+            
+            if (density != 0) {            
+                scalar_field_file << real(i) << delimiter
+                                  << real(j) << delimiter
+                                  << density[index] << delimiter
+                                  << std::endl;
+            }
         }
+        scalar_field_file << std::endl;
     }
-    file.close();
+    vector_field_file.close();
+    scalar_field_file.close();
+
+    GnuplotCmd(velocity_frame,
+                "plot 'velocity-data.dat' using 1:2:3:4:5 with vectors head filled lc palette");
+            
+    if (density_frame != 0) {
+        GnuplotCmd(density_frame, "splot 'density-data.dat' u 1:2:3");
+    }
+    usleep(10000);
 }

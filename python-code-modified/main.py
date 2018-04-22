@@ -47,11 +47,12 @@ def main():
     parameters.tau = 0.5 * (1 + (6.0 * parameters.viscosity * parameters.delta_t) / (parameters.delta_x**2))
     parameters.relaxation = 1.0 / parameters.tau
 
-    parameters.width = 80
-    parameters.height = 25
+    parameters.width = 30
+    parameters.height = 30
     parameters.num_lattices = parameters.width * parameters.height
 
-    parameters.obstacle = [10, 15, 10, 15]
+    #parameters.obstacle = [10, 15, 10, 15]
+    parameters.obstacle = [0,0,0,0]
 
     boundary_info.wall_velocity = [0.05, 0.0]
 
@@ -188,14 +189,14 @@ def init_cavity_flag_field(field, update_funcs, update_velocity_funcs, stream_fu
 
         # init left wall
         index = get_index(index_i=most_left_index, index_j=j, dim=1)
-        field[index] = constants.flags["inflow"]
+        field[index] = constants.flags["wall"]
         update_funcs[index] = update_density_bc_cell
         update_velocity_funcs[index] = update_velocity_bc_cell
         stream_funcs[index] = stream_fluid_bc
 
         # init right wall
         index = get_index(index_i=most_right_index, index_j=j, dim=1)
-        field[index] = constants.flags["outflow"]
+        field[index] = constants.flags["wall"]
         update_funcs[index] = update_density_bc_cell
         update_velocity_funcs[index] = update_velocity_bc_cell
         stream_funcs[index] = stream_fluid_bc
@@ -206,7 +207,7 @@ def init_cavity_flag_field(field, update_funcs, update_velocity_funcs, stream_fu
     for i in range(parameters.width):
         # init top (moving) wall
         index = get_index(index_i=i, index_j=top_index, dim=1)
-        field[index] = constants.flags["wall"]
+        field[index] = constants.flags["mov_wall"]
         update_funcs[index] = update_density_bc_cell
         update_velocity_funcs[index] = update_velocity_bc_cell
         stream_funcs[index] = stream_fluid_bc

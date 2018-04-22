@@ -109,7 +109,7 @@ void UpdatePopulationField(real *velocity,
                 
                 real vector_expansion = const_one * dot_product_cu
                                       + const_two * dot_product_cu * dot_product_cu
-                                      + const_three * dot_product_uu
+                                      - const_three * dot_product_uu
                                       + 1.0;
                 
                 real equilibrium = weights[component] 

@@ -55,11 +55,16 @@ void InitFlagFieldStub(int* flag_field,
         update_velocity[index] = UpdateVelocityBC;
         stream_element[index] = StreamBC; 
     }
-
+/*
     int obstacle[] = {10, 15, 10, 15};
     for (int j = obstacle[2]; j < obstacle[3]; ++j) {
         for (int i = obstacle[0]; i < obstacle[1]; ++i) {
-            flag_field[i] = WALL;
+            int index = GetIndex(i, j);
+            flag_field[index] = WALL;
+            update_density[index] = UpdateDensityBC;
+            update_velocity[index] = UpdateVelocityBC;
+            stream_element[index] = StreamBC; 
         }
     }
+*/
 }
