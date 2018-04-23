@@ -10,11 +10,13 @@ void ReadInputFilesStub(char *parameter_file,
 
 void InitParametersStub() {
     parameters.simulation_time = 1.0;
-    parameters.num_time_steps = 20000;
+    parameters.num_time_steps = 2000000;
     parameters.dimension = 2;
     parameters.discretization = 9;
     parameters.delta_x = 0.577 * 1e-3;
     parameters.delta_t = 1e-3;
+
+    /*
     parameters.speed_of_sound = parameters.delta_x / parameters.delta_t;
     parameters.viscosity = 85.06e-6;
     parameters.tau = 0.5 * (1.0 + 6.0 * (parameters.viscosity *
@@ -22,19 +24,30 @@ void InitParametersStub() {
                                          pow(parameters.delta_x, 2.0));
     
     
-    
+    */
+
+    parameters.tau = 1.8;
+    parameters.speed_of_sound = 1.0 / sqrt(3.0);
+    parameters.viscosity = 85.06e-6;
+
     parameters.relaxation = 1.0 / parameters.tau;
     parameters.width = 30;
     parameters.height = 30;
     parameters.num_lattices = parameters.width * parameters.height;
 
+/*    
     constants.one = 1.0 / (parameters.speed_of_sound * parameters.speed_of_sound);
     constants.two = 0.5 * constants.one * constants.one;
     constants.three = 0.5 * constants.one;
+*/    
+    
+    constants.one = 3.0; 
+    constants.two = 4.5;
+    constants.three = 1.5;
 }
 
 void InitBoundaryConditionStub() {
-    boundary_info.wall_velocity_x = 0.05;
+    boundary_info.wall_velocity_x = 0.26;
     boundary_info.wall_velocity_y = 0.00;
 
     boundary_info.density_inflow = 1.00;
