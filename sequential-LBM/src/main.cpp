@@ -4,6 +4,7 @@
 #include <iostream>
 #include <stdio.h>
 #include <time.h>
+#include <iostream>
 
 #include "headers/parameters.h"
 #include "headers/init.h"
@@ -30,7 +31,7 @@ int main() {
 
     SetupGnuPlots(velocity_frame, density_frame);
 
-    int steps_per_report = 10;
+    int steps_per_report = 200;
 
 
     int *flag_field = (int*)calloc(parameters.num_lattices, sizeof(int));
@@ -43,6 +44,9 @@ int main() {
     InitPopulationField(population);
     InitPopulationField(swap_buffer);
 
+    //InitArray<real>(population + parameters.num_lattices, 0.244444444, parameters.num_lattices);
+    //InitArray<real>(population + 3 * parameters.num_lattices, 0.2, parameters.num_lattices);
+
     ptr_update_func *update_density = (ptr_update_func*)calloc(parameters.num_lattices, 
                                                                sizeof(ptr_update_func));
     
@@ -54,8 +58,7 @@ int main() {
     
     InitArray<ptr_update_func>(update_density, UpdateDensityFluid, parameters.num_lattices);
     InitArray<ptr_update_func>(update_velocity, UpdateVelocityFluid, parameters.num_lattices);
-    InitArray<ptr_stream_func>(stream_element, StreamFluid, parameters.num_lattices);
-    
+    InitArray<ptr_stream_func>(stream_element, StreamFluid, parameters.num_lattices);    
 
     InitFlagFieldStub(flag_field, 
                       update_density,
@@ -114,7 +117,8 @@ int main() {
             //DisplayResults(velocity, velocity_frame);
             DisplayResults(velocity, velocity_frame,
                            density, density_frame);
-
+            //char temp;
+            //std::cin >> temp;
         }
 #endif
     }

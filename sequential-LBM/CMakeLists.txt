@@ -4,7 +4,7 @@ project(lbm)
 set(CMAKE_C_COMPILER /usr/local/cuda-8.0/bin//nvcc)
 
 add_definitions(-DGRAPHICS -DDEBUG)
-set(CMAKE_CXX_FLAGS "-g") 
+set(CMAKE_CXX_FLAGS "-O3") 
 set (CMAKE_CXX_STANDARD 11)
 
 file(GLOB SRCS "./src/*.cpp")
