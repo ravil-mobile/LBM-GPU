@@ -6,7 +6,7 @@
 typedef void (*ptr_stream_func)(int, int, real*, real*);
 
 void Stream(real *population,
-            real *swap_buffer, 
+            real *swap_buffer,
             ptr_stream_func *stream_element);
 
 void StreamFluid(int i, int j, real *population, real *swap_buffer);

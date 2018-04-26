@@ -29,14 +29,14 @@ void InitFlagFieldStub(int* flag_field,
         flag_field[index] = INFLOW;
         update_density[index] = UpdateDensityBC;
         update_velocity[index] = UpdateVelocityBC;
-        stream_element[index] = StreamBC; 
+        stream_element[index] = StreamBC;
 
         // init right wall
         index = GetIndex(most_right_index, i);
         flag_field[index] = OUTFLOW;
         update_density[index] = UpdateDensityBC;
         update_velocity[index] = UpdateVelocityBC;
-        stream_element[index] = StreamBC; 
+        stream_element[index] = StreamBC;
     }
 
     int bottom_index = 0;
@@ -47,14 +47,14 @@ void InitFlagFieldStub(int* flag_field,
         flag_field[index] = WALL;
         update_density[index] = UpdateDensityBC;
         update_velocity[index] = UpdateVelocityBC;
-        stream_element[index] = StreamBC; 
+        stream_element[index] = StreamBC;
 
         // init bottom wall
         index = GetIndex(i, bottom_index);
         flag_field[index] = WALL;
         update_density[index] = UpdateDensityBC;
         update_velocity[index] = UpdateVelocityBC;
-        stream_element[index] = StreamBC; 
+        stream_element[index] = StreamBC;
     }
 
     /*
@@ -65,7 +65,7 @@ void InitFlagFieldStub(int* flag_field,
             flag_field[index] = WALL;
             update_density[index] = UpdateDensityBC;
             update_velocity[index] = UpdateVelocityBC;
-            stream_element[index] = StreamBC; 
+            stream_element[index] = StreamBC;
         }
     }
     */
@@ -83,7 +83,7 @@ void InitFlagFieldStub(int* flag_field,
                 flag_field[index] = WALL;
                 update_density[index] = UpdateDensityBC;
                 update_velocity[index] = UpdateVelocityBC;
-                stream_element[index] = StreamBC;     
+                stream_element[index] = StreamBC;
             }
         }
     }

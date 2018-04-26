@@ -12,7 +12,7 @@ void UpdateDensityField(real *density,
 void UpdateDensityFluid(int index, real *density, real *population, real *velocity = 0);
 void UpdateDensityBC(int index, real* density, real *population, real *velocity = 0);
 
-void UpdateVelocityField(real *velocity, 
+void UpdateVelocityField(real *velocity,
                          real *population,
                          real *density,
                          ptr_update_func *update_function);

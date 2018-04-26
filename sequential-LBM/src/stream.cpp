@@ -21,7 +21,7 @@ void StreamFluid(int i, int j, real *population, real *swap_buffer) {
     for (int component = 0; component < num_directions; ++component) {
         int ii = coords[component];
         int jj = coords[component + num_directions];
-        
+
         int neighbour_index = GetIndex(i + ii, j + jj);
         int shift = component * num_lattices;
 

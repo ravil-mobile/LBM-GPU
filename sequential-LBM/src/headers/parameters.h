@@ -17,6 +17,7 @@ struct SimulationParametes {
     int width;
     int height;
     int num_lattices;
+    int steps_per_report;
 };
 extern struct SimulationParametes parameters;
 

@@ -29,7 +29,7 @@ void ScanFlagField(int *flag_field,
 
                     int scalar_neighbour_index = GetIndex(i + ii, j + jj);
                     int neighbour_flag = flag_field[scalar_neighbour_index];
-                    
+
                     if (neighbour_flag != FLUID) {
                         struct InfoBC boundary_lattice;
                         boundary_lattice.component = component;
@@ -46,9 +46,9 @@ void ScanFlagField(int *flag_field,
                             default:
                                 boundary_lattice.function = SkipBoundary;
                         }
-                        
+
                         auto search = container.find(scalar_neighbour_index);
-                        
+
                         if (search != container.end()) {
                             container[scalar_neighbour_index].push_back(boundary_lattice);
                         } else {
@@ -56,7 +56,7 @@ void ScanFlagField(int *flag_field,
                             container[scalar_neighbour_index] = vector;
                             container[scalar_neighbour_index].push_back(boundary_lattice);
                         }
-                    }   
+                    }
                 }
             }
         }
@@ -64,17 +64,17 @@ void ScanFlagField(int *flag_field,
 
     num_boundaries = container.size();
     (*boundary_coords) = (int*)calloc(num_boundaries, sizeof(int));
-    (*boundary_update) = (ptr_boundary_func*)calloc(num_boundaries * num_directions, 
+    (*boundary_update) = (ptr_boundary_func*)calloc(num_boundaries * num_directions,
                                                     sizeof(ptr_boundary_func));
 
     InitArray<ptr_boundary_func>(*boundary_update,
                                  SkipBoundary,
                                  num_boundaries * num_directions);
-    
+
     int counter = 0;
     for (auto iterator = container.begin(); iterator != container.end(); ++iterator) {
         (*boundary_coords)[counter] = iterator->first;
-        
+
         std::vector<struct InfoBC> vector = iterator->second;
 
         for (auto element = vector.begin(); element != vector.end(); ++element) {
