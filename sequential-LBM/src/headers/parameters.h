@@ -31,12 +31,8 @@ extern struct Constants constants;
 struct BoundaryInfo {
     real wall_velocity_x;
     real wall_velocity_y;
-    real density_inflow;
     real velocity_inflow_x;
     real velocity_inflow_y;
-    real density_outflow;
-    real velocity_outflow_x;
-    real velocity_outflow_y;
 };
 extern struct BoundaryInfo boundary_info;
 
