@@ -9,3 +9,5 @@ experements
 sequential-LBM/build/
 sequential-LBM/debug/
 
+parallel-LBM/build/
+parallel-LBM/debug/

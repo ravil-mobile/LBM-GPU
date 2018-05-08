@@ -1,0 +1,62 @@
+     
+    ptr_test_func *table = (ptr_test_func*)calloc(2, sizeof(ptr_test_func)); 
+    ptr_test_func *dev_table = 0;
+    
+    ptr_test_func *test = (ptr_test_func*)calloc(2, sizeof(ptr_test_func)); 
+    ptr_test_func *test_device = 0; 
+
+    HANDLE_ERROR(cudaMalloc((void**)&dev_table, 2 * sizeof(ptr_test_func)));
+    kernel_test_one<<<1,1>>>(dev_table);
+
+    CUDA_CHECK_ERROR();
+    
+    HANDLE_ERROR(cudaMemcpy(table, dev_table, 2 * sizeof(ptr_test_func), cudaMemcpyDeviceToHost));
+    test[0] = table[1];
+    test[1] = table[0];
+    HANDLE_ERROR(cudaMalloc((void**)&test_device, 2 * sizeof(ptr_test_func)));
+    HANDLE_ERROR(cudaMemcpy(test_device, test, 2 * sizeof(ptr_test_func), cudaMemcpyHostToDevice));
+
+    //kernel_test<<<1,1>>>(dev_test);
+    kernel_test_two<<<1,1>>>(test_device);
+    CUDA_CHECK_ERROR();
+    cudaDeviceSynchronize();
+    
+    free(test);
+    cudaFree(test_device);
+    cudaFree(dev_table);
+    free(table);
+
+*************************************************************************************
+__device__ void function_one() {
+    printf("one\n");
+}
+__device__ void function_two() {
+    printf("two\n");
+}
+
+__global__ void kernel_test_one(ptr_test_func *array) {
+    array[ONE] = function_one;
+    array[TWO] = function_two;
+}
+
+__global__ void kernel_test_two(ptr_test_func *array) {
+    array[ONE]();
+    array[TWO]();
+}
+
+__global__ void kernel_print_test(ptr_test_func *array) {
+    printf("number of lattices on gpu %d\n", parameters_device.num_lattices);
+    int id = threadIdx.x;
+    //array[id]();
+}
+*********************************************************************************
+__device__ void function_one();
+__device__ void function_two();
+
+__global__ void kernel_test_one(ptr_test_func *array);
+
+__global__ void kernel_test_two(ptr_test_func *array);
+
+__global__ void kernel_print_test(ptr_test_func *array);
+
+
