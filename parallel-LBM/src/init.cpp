@@ -26,14 +26,14 @@ void InitFlagFieldStub(int* flag_field,
     for (int i = 0; i < parameters.height; ++i) {
         // init left wall
         int index = GetIndex(most_left_index, i);
-        flag_field[index] = INFLOW;
+        flag_field[index] = WALL;
         update_density[index] = UpdateDensityBC;
         update_velocity[index] = UpdateVelocityBC;
         stream_element[index] = StreamBC;
 
         // init right wall
         index = GetIndex(most_right_index, i);
-        flag_field[index] = OUTFLOW;
+        flag_field[index] = WALL;
         update_density[index] = UpdateDensityBC;
         update_velocity[index] = UpdateVelocityBC;
         stream_element[index] = StreamBC;
@@ -44,7 +44,7 @@ void InitFlagFieldStub(int* flag_field,
     for (int i = 0; i < parameters.width; ++i) {
         // init top (moving) wall
         int index = GetIndex(i, top_index);
-        flag_field[index] = WALL;
+        flag_field[index] = MOVING_WALL;
         update_density[index] = UpdateDensityBC;
         update_velocity[index] = UpdateVelocityBC;
         stream_element[index] = StreamBC;
@@ -57,8 +57,8 @@ void InitFlagFieldStub(int* flag_field,
         stream_element[index] = StreamBC;
     }
 
-    /*
-    int obstacle[] = {10, 15, 10, 15};
+    
+    int obstacle[] = {20, 50, 25, 45};
     for (int j = obstacle[2]; j < obstacle[3]; ++j) {
         for (int i = obstacle[0]; i < obstacle[1]; ++i) {
             int index = GetIndex(i, j);
@@ -68,8 +68,8 @@ void InitFlagFieldStub(int* flag_field,
             stream_element[index] = StreamBC;
         }
     }
-    */
-
+    
+    /*
     int center[] = {315, 315};
     int radius = 30;
     for (int j = (center[1] - radius); j < (center[1] + radius); ++j) {
@@ -87,4 +87,5 @@ void InitFlagFieldStub(int* flag_field,
             }
         }
     }
+    */
 }

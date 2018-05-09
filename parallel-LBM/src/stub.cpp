@@ -10,7 +10,7 @@ void ReadInputFilesStub(char *parameter_file,
 
 void InitParametersStub() {
     parameters.simulation_time = 1.0;
-    parameters.num_time_steps = 20;
+    parameters.num_time_steps = 200000000;
     parameters.dimension = 2;
     parameters.discretization = 9;
     parameters.delta_x = 0.577 * 1e-3;
@@ -29,10 +29,10 @@ void InitParametersStub() {
     parameters.viscosity = 85.06e-6;
 
     parameters.relaxation = 1.0 / parameters.tau;
-    parameters.width = 930;
-    parameters.height = 630;
+    parameters.width = 70;
+    parameters.height = 50;
     parameters.num_lattices = parameters.width * parameters.height;
-    parameters.steps_per_report = 300;
+    parameters.steps_per_report = 5;
 
     constants.one = 3.0;
     constants.two = 4.5;

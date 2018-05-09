@@ -66,6 +66,15 @@ __device__ int GetIndexDevice(int index_i, int index_j) {
     return index_i + index_j * parameters_device.width; 
 }
 
+__global__ void SwapFields(real *a, real *b) {
+    int thread_id = threadIdx.x + blockIdx.x * blockDim.x;
+    if (thread_id == MASTER) {
+        real *temp = a;
+        a = b;
+        b = temp;
+    }
+} 
+
 __global__ void InitArrayDevice(real *array, real init_value, int size) {
     int thread_id = threadIdx.x + blockIdx.x * blockDim.x; 
     while (thread_id < size) { 

@@ -13,6 +13,8 @@ void CopyConstantsToDevice(struct SimulationParametes parameters,
 
 __global__ void CheckConstMemoryCopy();
 
+__global__ void SwapFields(real *a, real *b);
+
 __global__ void InitArrayDevice(real *array, real init_value, int size);
 
 __global__ void StreamDevice(real *population,

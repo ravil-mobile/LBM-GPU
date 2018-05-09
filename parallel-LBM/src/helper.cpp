@@ -100,5 +100,5 @@ void DisplayResults(real *velocity, gnuplot_ctrl *velocity_frame,
     if (density_frame != NULL) {
         GnuplotCmd(density_frame, "splot 'density-data.dat' u 1:2:3");
     }
-    // usleep(10000);
+    usleep(10000);
 }

@@ -6,8 +6,8 @@ find_package(CUDA REQUIRED)
 
 set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS}; -O2; -std=c++11; -arch=sm_20; -Xptxas -v)
 
-#add_definitions(-DGRAPHICS -DDEBUG)
-add_definitions(-DDEBUG)
+add_definitions(-DGRAPHICS -DDEBUG)
+#add_definitions(-DDEBUG)
 file(GLOB SRCS "./src/*.cpp" "./src/*.cu")
 
 #include_directories("${CUDA_INCLUDE_DIRS}")

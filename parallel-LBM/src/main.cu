@@ -181,11 +181,11 @@ int main() {
     // start of algorighm
     clock_t begin = clock();
     for (int time = 0; time < parameters.num_time_steps; ++time) {
-                  
+  
         StreamDevice<<<NUM_BLOCKS, NUM_THREADS>>>(dev_population,
                                                   dev_swap_buffer,
                                                   dev_flag_field);
-        //HANDLE_ERROR(cudaDeviceSynchronize());
+        CUDA_CHECK_ERROR(); 
 
         HANDLE_ERROR(cudaMemcpy(swap_buffer,
                                 dev_swap_buffer,
@@ -199,53 +199,47 @@ int main() {
                       velocity,
                       density);
         
+        
         HANDLE_ERROR(cudaMemcpy(dev_swap_buffer,
                                 swap_buffer,
                                 parameters.num_lattices * parameters.discretization * sizeof(real),
-                                cudaMemcpyHostToDevice));
+                                cudaMemcpyHostToDevice)); 
         
-        //INCLUDE SYNCHRONIZATION HERE 
-        std::swap(population, swap_buffer);
+
+
         std::swap(dev_population, dev_swap_buffer);
-        
-        
+       
         UpdateDensityFieldDevice<<<NUM_BLOCKS, NUM_THREADS>>>(dev_density,
                                                               dev_population,
-                                                              dev_flag_field); 
-        //HANDLE_ERROR(cudaDeviceSynchronize());
-        
+                                                              dev_flag_field);
+
+        CUDA_CHECK_ERROR(); 
 
         UpdateVelocityFieldDevice<<<NUM_BLOCKS, NUM_THREADS>>>(dev_velocity,
                                                                dev_population,
                                                                dev_density,
                                                                dev_flag_field);
-        //HANDLE_ERROR(cudaDeviceSynchronize());
-        
+        CUDA_CHECK_ERROR(); 
 
-        UpdatePopulationFieldDevice<<<NUM_BLOCKS, NUM_THREADS>>>(dev_velocity,
+        int threads = 960;
+        int blocks = (parameters.num_lattices + threads) / threads;
+        UpdatePopulationFieldDevice<<<blocks, threads>>>(dev_velocity,
                                                                  dev_population,
                                                                  dev_density);
-        //INCLUDE SYNCHRONIZATION HERE
-        //HANDLE_ERROR(cudaDeviceSynchronize());
+        CUDA_CHECK_ERROR(); 
 
-        
+
         HANDLE_ERROR(cudaMemcpy(density,
                                 dev_density,
                                 parameters.num_lattices * sizeof(real),
                                 cudaMemcpyDeviceToHost));
-        
+
         HANDLE_ERROR(cudaMemcpy(velocity,
                                 dev_velocity,
                                 parameters.num_lattices * parameters.dimension * sizeof(real),
                                 cudaMemcpyDeviceToHost));
-        
-        HANDLE_ERROR(cudaMemcpy(population,
-                                dev_population,
-                                parameters.num_lattices * parameters.discretization * sizeof(real),
-                                cudaMemcpyDeviceToHost));
-        
 
-        #ifdef DEBUG
+#ifdef DEBUG
         real max_density = *std::max_element(density,
                                     density + parameters.num_lattices);
         real min_density = *std::min_element(density,
