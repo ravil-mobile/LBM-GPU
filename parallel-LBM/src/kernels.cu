@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include "headers/kernels.h"
 #include "headers/parameters.h"
+#include "headers/boundary_conditions.h"
 
 __constant__ struct SimulationParametes parameters_device;
 __constant__ struct Constants constants_device;
@@ -198,3 +199,45 @@ __global__ void UpdatePopulationFieldDevice(real *velocity,
         thread_id += blockDim.x * gridDim.x;
     }
 } 
+
+__global__ void PrintBC(struct BoundaryConditions *boundary_conditions) {
+    int thread_id = threadIdx.x + blockIdx.x * blockDim.x;
+    if (thread_id == MASTER) {
+        printf("GPU: num walls %d\n", boundary_conditions->num_wall_elements);
+        printf("GPU: num moving walls %d\n", boundary_conditions->num_moving_wall_elements);
+
+    }
+}
+
+__global__ void TreatNonSlipBC(int *indices,
+                               real *population,
+                               int size) {
+    int thread_id = threadIdx.x + blockIdx.x * blockDim.x;
+    
+    while (thread_id < size) {
+        int source = indices[thread_id];
+        int target = indices[size + thread_id];
+        population[target] = population[source];
+
+        thread_id += blockDim.x * gridDim.x;
+    }
+}
+
+__global__ void TreatSlipBC(int *indices,
+                            real *data,
+                            real *density,
+                            real *population,
+                            int size) {
+    int thread_id = threadIdx.x + blockIdx.x * blockDim.x;
+    
+    while (thread_id < size) {
+        int source = indices[thread_id];
+        int target = indices[size + thread_id];
+        int index = indices[2 * size + thread_id];
+
+        population[target] = population[source] + data[thread_id] * density[index];
+
+        thread_id += blockDim.x * gridDim.x;
+    }
+}
+

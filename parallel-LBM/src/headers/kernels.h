@@ -1,4 +1,5 @@
 #include "parameters.h"
+#include "boundary_conditions.h"
 #ifndef SEQUENTIAL_LBM_SRC_HEADERS_KERNELS_H_
 #define SEQUENTIAL_LBM_SRC_HEADERS_KERNELS_H_
 
@@ -33,5 +34,17 @@ __global__ void UpdateVelocityFieldDevice(real *velocity,
 __global__ void UpdatePopulationFieldDevice(real *velocity,
                                             real *population,
                                             real *density);
+
+__global__ void PrintBC(struct BoundaryConditions* boundary_conditions);
+
+__global__ void TreatNonSlipBC(int *indices,
+                               real *population,
+                               int size);
+
+__global__ void TreatSlipBC(int *indices,
+                            real *data,
+                            real *density,
+                            real *population,
+                            int size); 
 
 #endif  // SEQUENTIAL_LBM_SRC_HEADERS_KERNELS_H_

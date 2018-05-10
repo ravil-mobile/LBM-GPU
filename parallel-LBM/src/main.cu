@@ -16,6 +16,7 @@
 #include "headers/gnuplot_i.h"
 #include "headers/helper.h"
 #include "headers/kernels.h"
+#include "headers/domain.h"
 
 int main() {
 
@@ -127,119 +128,98 @@ int main() {
     int num_boundaries = 0;
     ptr_boundary_func *boundary_update = 0;
     int *boundary_coords = 0;
+    
+    // allocate and init DOMAIN on the DEVICE
+    DomainHandler domain_handler;
+    domain_handler.InitDomainOnDevice(parameters,
+                                      flag_field,
+                                      NUM_THREADS,
+                                      NUM_BLOCKS);
 
+    Domain *domain = domain_handler.GetDeviceData();
+
+    // allocate and init BOUNDARIES on the DEVICE
+    BoundaryConditionsHandler bc_handler;
+    
     ScanFlagField(flag_field,
                   &boundary_update,
                   &boundary_coords,
-                  num_boundaries);
+                  num_boundaries,
+                  bc_handler);
 
-    // allocate memory in the DEVICE
-    int *dev_flag_field; 
-    real *dev_density;  
-    real *dev_velocity; 
-    real *dev_population; 
-    real *dev_swap_buffer; 
-    
-    HANDLE_ERROR(cudaMalloc(&dev_flag_field, parameters.num_lattices * sizeof(int)));
-    HANDLE_ERROR(cudaMalloc(&dev_density, parameters.num_lattices * sizeof(real)));
-    HANDLE_ERROR(cudaMalloc(&dev_velocity, 
-                            parameters.dimension * parameters.num_lattices * sizeof(real)));
+    const BoundaryConditions* boundaries = bc_handler.GetDeviceData();
 
-    HANDLE_ERROR(cudaMalloc(&dev_population, 
-                            parameters.discretization * parameters.num_lattices * sizeof(real)));
-    
-    HANDLE_ERROR(cudaMalloc(&dev_swap_buffer, 
-                            parameters.discretization * parameters.num_lattices * sizeof(real)));
+    int threads = 0;
+    int blocks = 0;
 
+    cudaEvent_t start, stop;
+    cudaEventCreate(&start);
+    cudaEventCreate(&stop);
 
-    // init memory in the DEVICE
-    HANDLE_ERROR(cudaMemcpy(dev_flag_field,
-                            flag_field,
-                            parameters.num_lattices * sizeof(int),
-                            cudaMemcpyHostToDevice));
-
-    InitArrayDevice<<<NUM_BLOCKS, NUM_THREADS>>>(dev_density, 1.0, parameters.num_lattices); 
-
-    InitArrayDevice<<<NUM_BLOCKS, NUM_THREADS>>>(dev_velocity, 0.0,
-                                                 parameters.dimension * parameters.num_lattices);
-
-    for (int i = 0; i < parameters.discretization; ++i) {
-        real *ptr = (dev_population + i * parameters.num_lattices);
-        real *ptr_buffer = (dev_swap_buffer + i * parameters.num_lattices);
-
-        InitArrayDevice<<<NUM_BLOCKS, NUM_THREADS>>>(ptr,
-                                                     weights[i],
-                                                     parameters.num_lattices);
-
-        InitArrayDevice<<<NUM_BLOCKS, NUM_THREADS>>> (ptr_buffer,
-                                                      weights[i],
-                                                      parameters.num_lattices);
-    } 
-    
-    HANDLE_ERROR(cudaDeviceSynchronize());
-
-    // start of algorighm
-    clock_t begin = clock();
+    // START of algorighm
+    cudaEventRecord(start, 0);
     for (int time = 0; time < parameters.num_time_steps; ++time) {
-  
-        StreamDevice<<<NUM_BLOCKS, NUM_THREADS>>>(dev_population,
-                                                  dev_swap_buffer,
-                                                  dev_flag_field);
+ 
+        // perform streaming step 
+        StreamDevice<<<NUM_BLOCKS, NUM_THREADS>>>(domain->dev_population,
+                                                  domain->dev_swap_buffer,
+                                                  domain->dev_flag_field);
         CUDA_CHECK_ERROR(); 
 
-        HANDLE_ERROR(cudaMemcpy(swap_buffer,
-                                dev_swap_buffer,
-                                parameters.num_lattices * parameters.discretization * sizeof(real),
-                                cudaMemcpyDeviceToHost));
-        
-        TreatBoundary(boundary_update,
-                      boundary_coords,
-                      num_boundaries,
-                      swap_buffer,
-                      velocity,
-                      density);
-        
-        
-        HANDLE_ERROR(cudaMemcpy(dev_swap_buffer,
-                                swap_buffer,
-                                parameters.num_lattices * parameters.discretization * sizeof(real),
-                                cudaMemcpyHostToDevice)); 
-        
+        // apply boundary consitions
+        if (boundaries->num_wall_elements != 0) {
+            threads = min(boundaries->num_wall_elements, NUM_THREADS);
+            blocks = (parameters.num_lattices + threads) / threads;
+            TreatNonSlipBC<<<blocks, threads>>>(boundaries->bc_wall_indices,
+                                                domain->dev_swap_buffer,
+                                                boundaries->num_wall_elements); 
+            CUDA_CHECK_ERROR();
+        }
 
+        if (boundaries->num_moving_wall_elements != 0) {
+            threads = min(boundaries->num_moving_wall_elements, NUM_THREADS);
+            blocks = (parameters.num_lattices + threads) / threads;
+            TreatSlipBC<<<blocks, threads>>>(boundaries->bc_moving_wall_indices,
+                                         boundaries->bc_moving_wall_data,
+                                         domain->dev_density,
+                                         domain->dev_swap_buffer,
+                                         boundaries->num_moving_wall_elements);
+            CUDA_CHECK_ERROR();
+        }
 
-        std::swap(dev_population, dev_swap_buffer);
+        
+        HANDLE_ERROR(cudaDeviceSynchronize());        
+        std::swap(domain->dev_population, domain->dev_swap_buffer);
        
-        UpdateDensityFieldDevice<<<NUM_BLOCKS, NUM_THREADS>>>(dev_density,
-                                                              dev_population,
-                                                              dev_flag_field);
+        // perform collision step 
+        UpdateDensityFieldDevice<<<NUM_BLOCKS, NUM_THREADS>>>(domain->dev_density,
+                                                              domain->dev_population,
+                                                              domain->dev_flag_field);
 
         CUDA_CHECK_ERROR(); 
 
-        UpdateVelocityFieldDevice<<<NUM_BLOCKS, NUM_THREADS>>>(dev_velocity,
-                                                               dev_population,
-                                                               dev_density,
-                                                               dev_flag_field);
+        
+        UpdateVelocityFieldDevice<<<NUM_BLOCKS, NUM_THREADS>>>(domain->dev_velocity,
+                                                               domain->dev_population,
+                                                               domain->dev_density,
+                                                               domain->dev_flag_field);
         CUDA_CHECK_ERROR(); 
 
-        int threads = 960;
-        int blocks = (parameters.num_lattices + threads) / threads;
-        UpdatePopulationFieldDevice<<<blocks, threads>>>(dev_velocity,
-                                                                 dev_population,
-                                                                 dev_density);
+        
+        threads = 960;
+        blocks = (parameters.num_lattices + threads) / threads;
+        UpdatePopulationFieldDevice<<<blocks, threads>>>(domain->dev_velocity,
+                                                         domain->dev_population,
+                                                         domain->dev_density);
         CUDA_CHECK_ERROR(); 
 
 
+#ifdef DEBUG
         HANDLE_ERROR(cudaMemcpy(density,
-                                dev_density,
+                                domain->dev_density,
                                 parameters.num_lattices * sizeof(real),
                                 cudaMemcpyDeviceToHost));
 
-        HANDLE_ERROR(cudaMemcpy(velocity,
-                                dev_velocity,
-                                parameters.num_lattices * parameters.dimension * sizeof(real),
-                                cudaMemcpyDeviceToHost));
-
-#ifdef DEBUG
         real max_density = *std::max_element(density,
                                     density + parameters.num_lattices);
         real min_density = *std::min_element(density,
@@ -252,6 +232,11 @@ int main() {
 #endif
 
 #ifdef GRAPHICS
+        HANDLE_ERROR(cudaMemcpy(velocity,
+                                domain->dev_velocity,
+                                parameters.num_lattices * parameters.dimension * sizeof(real),
+                                cudaMemcpyDeviceToHost));
+
         if ((time % parameters.steps_per_report) == 0) {
             DisplayResults(velocity, velocity_frame);
             // DisplayResults(velocity, velocity_frame,
@@ -259,10 +244,16 @@ int main() {
         }
 #endif
     }
-    clock_t end = clock() - begin;
-    double consumed_time = (double)(end - begin) / CLOCKS_PER_SEC;
+    cudaEventRecord(stop, 0);
+    
+    cudaEventSynchronize(start);
+    cudaEventSynchronize(stop);
+    float elapsed_time = 0;
+    cudaEventElapsedTime(&elapsed_time, start, stop); 
+    
+    
     double MLUPS = (parameters.num_lattices * parameters.num_time_steps)
-                 / (consumed_time * 1e6);
+                 / (elapsed_time * 1e3);
 
     printf("MLUPS: %4.6f\n", MLUPS);
 
@@ -274,12 +265,6 @@ int main() {
 
     
     // free DEVICE resources
-    cudaFree(dev_flag_field);
-    cudaFree(dev_density); 
-    cudaFree(dev_velocity);
-    cudaFree(dev_population);
-    cudaFree(dev_swap_buffer);
-
     free(flag_field);
     free(density);
     free(velocity);

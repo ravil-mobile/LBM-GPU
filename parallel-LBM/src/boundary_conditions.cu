@@ -1,6 +1,102 @@
 #include "headers/parameters.h"
 #include "headers/helper.h"
 #include "headers/boundary_conditions.h"
+#include "headers/kernels.h"
+
+BoundaryConditionsHandler::BoundaryConditionsHandler() {
+    dev_boundary_conditions.bc_wall_indices = 0;
+    dev_boundary_conditions.num_wall_elements = 0;
+
+    dev_boundary_conditions.bc_moving_wall_indices = 0;
+    dev_boundary_conditions.bc_moving_wall_data = 0;
+    dev_boundary_conditions.num_moving_wall_elements = 0;
+}
+
+BoundaryConditionsHandler::~BoundaryConditionsHandler() {
+    if (dev_boundary_conditions.bc_wall_indices != NULL) {
+        HANDLE_ERROR(cudaFree(dev_boundary_conditions.bc_wall_indices));
+    }
+        
+    if (dev_boundary_conditions.bc_moving_wall_data != NULL) {
+        HANDLE_ERROR(cudaFree(dev_boundary_conditions.bc_moving_wall_data));
+    }
+        
+    if (dev_boundary_conditions.bc_moving_wall_indices != NULL) {
+        HANDLE_ERROR(cudaFree(dev_boundary_conditions.bc_moving_wall_indices));
+    }
+}
+
+void BoundaryConditionsHandler::SetNonSlipBC(std::vector<struct WallBC> elements) {
+    
+    // concert data from AoS to SoA 
+    int size = elements.size();
+    int *temp_indices = (int*)calloc(2 * size, sizeof(int));
+
+    for (int i = 0; i < size; ++i) {
+        temp_indices[i] = elements[i].source_index;
+        temp_indices[i + size] = elements[i].target_index;
+    } 
+    
+    // allocate memory on the DEVICE
+    HANDLE_ERROR(cudaMalloc(&dev_boundary_conditions.bc_wall_indices,
+                            2 * size * sizeof(int)));
+    
+    // copy data from HOST to DEVICE
+    HANDLE_ERROR(cudaMemcpy(dev_boundary_conditions.bc_wall_indices,
+                            temp_indices,
+                            2 * size * sizeof(int),
+                            cudaMemcpyHostToDevice));
+    
+    dev_boundary_conditions.num_wall_elements = size;
+    
+    // free resources on the HOST 
+    free(temp_indices);
+}
+
+void BoundaryConditionsHandler::SetSlipBC(std::vector<struct MovingWallBC> elements) {
+   
+    // concert data from AoS to SoA 
+    int size = elements.size(); 
+    int *temp_indices = (int*)calloc(3 * size, sizeof(int));
+    real* temp_data = (real*)calloc(size, sizeof(real));
+
+    for (int i = 0; i < size; ++i) {
+        temp_indices[i] = elements[i].source_index;
+        temp_indices[i + size] = elements[i].target_index;
+        temp_indices[i + 2 * size] = elements[i].scalar_target_index;
+
+        temp_data[i] = elements[i].precomputed_data;
+    }
+    
+    // allocate memory on the DEVICE
+    HANDLE_ERROR(cudaMalloc(&dev_boundary_conditions.bc_moving_wall_indices,
+                            3 * size * sizeof(int)));
+
+    HANDLE_ERROR(cudaMalloc(&dev_boundary_conditions.bc_moving_wall_data,
+                            size * sizeof(real)));
+
+    // copy data from HOST to DEVICE
+    HANDLE_ERROR(cudaMemcpy(dev_boundary_conditions.bc_moving_wall_indices,
+                            temp_indices,
+                            3 * size * sizeof(int),
+                            cudaMemcpyHostToDevice));
+
+    HANDLE_ERROR(cudaMemcpy(dev_boundary_conditions.bc_moving_wall_data,
+                            temp_data,
+                            size * sizeof(real),
+                            cudaMemcpyHostToDevice));
+    
+    dev_boundary_conditions.num_moving_wall_elements = size;
+
+    // free resources on the HOST 
+    free(temp_indices);
+    free(temp_data);
+}
+
+const BoundaryConditions * BoundaryConditionsHandler::GetDeviceData() {
+    return &dev_boundary_conditions;
+}
+
 
 void TreatBoundary(ptr_boundary_func *boundary_update,
                    int *boundary_coords,
@@ -32,6 +128,7 @@ void ApplyNonSlipBC(int component,
                     real *population,
                     real *velocity,
                     real *density) {
+/*
     int num_lattices = parameters.num_lattices;
     int num_directions = parameters.discretization;
 
@@ -45,6 +142,7 @@ void ApplyNonSlipBC(int component,
     int neighbour_index = (coordinate + shift) + inverse_component * num_lattices;
 
     population[neighbour_index] = population[self_index];
+*/
 }
 
 void ApplyMovingWallBC(int component,
@@ -173,3 +271,4 @@ void ApplyOutflowBC(int component,
                                 + equilibrium_inv
                                 - population[self_index];
 }
+
