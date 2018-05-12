@@ -49,10 +49,12 @@ int main() {
     // read the enviroment variable "MAX_NUM_THREADS_PER_BLOCK"
     // use the maximum value provide by the DEVICE if the variable has not been defined
     char* str_num_threads = getenv ("MAX_NUM_THREADS_PER_BLOCK");
-    int num_threads = atoi(str_num_threads);
-    if (num_threads != 0) {
-        max_num_threads_per_block = num_threads;
-    }    
+    if (str_num_threads != NULL) {
+        int num_threads = atoi(str_num_threads);
+        if (num_threads != 0) {
+            max_num_threads_per_block = num_threads;
+        }
+    } 
 
     HANDLE_ERROR(cudaSetDevice(gpu_device));
     HANDLE_ERROR(cudaGetDeviceProperties(&property, gpu_device));
@@ -60,12 +62,18 @@ int main() {
     printf(" --- Number threads per block: %d --- \n", max_num_threads_per_block);
     printf(" --- Number registers per block: %d --- \n", property.regsPerBlock);
 
+    struct SimulationParametes parameters;
+    struct BoundaryInfo boundary_info;
+    struct Constants constants;
 
     // read input data
     char parameter_file[] = "parameter.txt";
     char boundary_file[] = "boundary.txt";
     char grid_file[] = "grid.txt";
-    ReadInputFilesStub(parameter_file,
+    ReadInputFilesStub(parameters,
+                       boundary_info,
+                       constants,
+                       parameter_file,
                        boundary_file);
     
     // define cuda grid parameters
@@ -101,7 +109,7 @@ int main() {
     velocity_frame = gnuplot_init();
     density_frame = gnuplot_init();
 
-    SetupGnuPlots(velocity_frame, density_frame);
+    SetupGnuPlots(velocity_frame, density_frame, parameters);
 
     // allocate memory in the HOST
     int *flag_field = (int*)calloc(parameters.num_lattices, sizeof(int));
@@ -109,7 +117,8 @@ int main() {
     real *velocity_magnitude = (real*)calloc(parameters.num_lattices, sizeof(real));
 
     InitFlagFieldStub(flag_field,
-                      grid_file);
+                      grid_file,
+                      parameters);
     
     // allocate and init DOMAIN on the DEVICE
     DomainHandler domain_handler;
@@ -123,7 +132,11 @@ int main() {
     // allocate and init BOUNDARIES on the DEVICE
     BoundaryConditionsHandler bc_handler;
     
-    ScanFlagField(flag_field, bc_handler);
+    ScanFlagField(flag_field,
+                  bc_handler,
+                  parameters,
+                  constants,
+                  boundary_info);
 
     const BoundaryConditions *boundaries = bc_handler.GetDeviceData();
 
@@ -142,7 +155,7 @@ int main() {
         StreamDevice<<<MAX_NUM_BLOCKS, MAX_NUM_THREADS>>>(domain->dev_population,
                                                           domain->dev_swap_buffer,
                                                           domain->dev_flag_field);
-        CUDA_CHECK_ERROR(); 
+        //CUDA_CHECK_ERROR(); 
         
         // apply boundary consitions
         if (boundaries->num_wall_elements != 0) {
@@ -151,7 +164,7 @@ int main() {
             TreatNonSlipBC<<<blocks, threads>>>(boundaries->bc_wall_indices,
                                                 domain->dev_swap_buffer,
                                                 boundaries->num_wall_elements); 
-            CUDA_CHECK_ERROR();
+            //CUDA_CHECK_ERROR();
         }
 
         if (boundaries->num_moving_wall_elements != 0) {
@@ -162,7 +175,7 @@ int main() {
                                          domain->dev_density,
                                          domain->dev_swap_buffer,
                                          boundaries->num_moving_wall_elements);
-            CUDA_CHECK_ERROR();
+            //CUDA_CHECK_ERROR();
         }
 
         if (boundaries->num_inflow_elements != 0) {
@@ -173,7 +186,7 @@ int main() {
                                                domain->dev_density,
                                                domain->dev_swap_buffer,
                                                boundaries->num_inflow_elements);
-            CUDA_CHECK_ERROR();
+            //CUDA_CHECK_ERROR();
         }
 
         if (boundaries->num_outflow_elements != 0) {
@@ -184,7 +197,7 @@ int main() {
                                                 domain->dev_density,
                                                 domain->dev_swap_buffer,
                                                 boundaries->num_outflow_elements);
-            CUDA_CHECK_ERROR();
+            //CUDA_CHECK_ERROR();
         }
 
 
@@ -196,37 +209,49 @@ int main() {
                                                                       domain->dev_population,
                                                                       domain->dev_flag_field);
 
-        CUDA_CHECK_ERROR(); 
+        //CUDA_CHECK_ERROR(); 
 
         
         UpdateVelocityFieldDevice<<<MAX_NUM_BLOCKS, MAX_NUM_THREADS>>>(domain->dev_velocity,
                                                                        domain->dev_population,
                                                                        domain->dev_density,
                                                                        domain->dev_flag_field);
-        CUDA_CHECK_ERROR(); 
+        //CUDA_CHECK_ERROR(); 
 
         
         UpdatePopulationFieldDevice<<<MIN_NUM_BLOCKS, MIN_NUM_THREADS>>>(domain->dev_velocity,
                                                                          domain->dev_population,
                                                                          domain->dev_density);
-        CUDA_CHECK_ERROR(); 
-
+        //CUDA_CHECK_ERROR(); 
+        
+        /*
+        threads = 468;
+        blocks = (parameters.num_lattices + threads) / threads; 
+        UpdatePopulationFieldDevice<<<blocks, threads>>>(domain->dev_velocity,
+                                                         domain->dev_population,
+                                                         domain->dev_density);
+        */
 
 #ifdef DEBUG
-        HANDLE_ERROR(cudaMemcpy(density,
-                                domain->dev_density,
-                                parameters.num_lattices * sizeof(real),
-                                cudaMemcpyDeviceToHost));
+
+
+
+        if ((time % parameters.steps_per_report) == 0) {
+
+            HANDLE_ERROR(cudaMemcpy(density,
+                                    domain->dev_density,
+                                    parameters.num_lattices * sizeof(real),
+                                    cudaMemcpyDeviceToHost));
          
-        real max_density = *std::max_element(density,
+            real max_density = *std::max_element(density,
                                     density + parameters.num_lattices);
-        real min_density = *std::min_element(density,
+            real min_density = *std::min_element(density,
                                 density + parameters.num_lattices);
 
-
-        std::cout << "time step: " << time << "; ";
-        std::cout << "max density: " << max_density << "; ";
-        std::cout << "min density "  << min_density << std::endl;
+            std::cout << "time step: " << time << "; ";
+            std::cout << "max density: " << max_density << "; ";
+            std::cout << "min density "  << min_density << std::endl;
+        }
 #endif
 
 #ifdef GRAPHICS
@@ -242,7 +267,7 @@ int main() {
                                     parameters.num_lattices * sizeof(real),
                                     cudaMemcpyDeviceToHost));
 
-            DisplayResults(velocity_magnitude, velocity_frame);
+            DisplayResults(velocity_magnitude, velocity_frame, parameters);
             // DisplayResults(velocity, velocity_frame,
             //               density, density_frame);
         }

@@ -9,8 +9,10 @@
 #include "headers/parameters.h"
 #include "headers/helper.h"
 
-int GetIndex(int index_i, int index_j, int dim) {
-    return dim * (index_i + index_j * parameters.width);
+int GetIndex(int index_i,
+             int index_j,
+             const int width) {
+    return (index_i + index_j * width);
 }
 
 void GnuplotCmd(gnuplot_ctrl *frame, std::string command) {
@@ -18,7 +20,8 @@ void GnuplotCmd(gnuplot_ctrl *frame, std::string command) {
 }
 
 void SetupGnuPlots(gnuplot_ctrl *velocity_frame,
-                   gnuplot_ctrl *density_frame) {
+                   gnuplot_ctrl *density_frame,
+                   const struct SimulationParametes &parameters) {
     std::string command = "";
 
     command = std::string("set xrange [0:")
@@ -44,8 +47,11 @@ void SetupGnuPlots(gnuplot_ctrl *velocity_frame,
     // GnuplotCmd(density_frame, "set cbrange [0.7:1.3]");
 }
 
-void DisplayResults(real *velocity, gnuplot_ctrl *velocity_frame,
-                    real *density,  gnuplot_ctrl *density_frame) {
+void DisplayResults(real *velocity,
+                    gnuplot_ctrl *velocity_frame,
+                    const struct SimulationParametes &parameters,
+                    real *density,  
+                    gnuplot_ctrl *density_frame) {
     real delta_x = parameters.delta_x;
     int num_lattices = parameters.num_lattices;
 
@@ -63,7 +69,7 @@ void DisplayResults(real *velocity, gnuplot_ctrl *velocity_frame,
     std::string delimiter = "\t";
     for (int j = 1; j < parameters.height - 1; ++j) {
         for (int i = 1; i < parameters.width - 1; ++i) {
-            int index = GetIndex(i, j);
+            int index = GetIndex(i, j, parameters.width);
 
             velocity_field_file << real(i) << delimiter
                                 << real(j) << delimiter

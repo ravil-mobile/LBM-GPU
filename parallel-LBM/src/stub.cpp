@@ -2,15 +2,19 @@
 #include "headers/parameters.h"
 #include "headers/stub.h"
 
-void ReadInputFilesStub(char *parameter_file,
+void ReadInputFilesStub(struct SimulationParametes &parameters,
+                        struct BoundaryInfo &boundary_info,
+                        struct Constants &constants,
+                        char *parameter_file,
                         char *boundary_file) {
-    InitParametersStub();
-    InitBoundaryConditionStub();
+    InitParametersStub(parameters, constants);
+    InitBoundaryConditionStub(boundary_info);
 }
 
-void InitParametersStub() {
+void InitParametersStub(SimulationParametes &parameters,
+                        Constants &constants) {
     parameters.simulation_time = 1.0;
-    parameters.num_time_steps = 200000;
+    parameters.num_time_steps = 2000000;
     parameters.dimension = 2;
     parameters.discretization = 9;
     parameters.delta_x = 0.577 * 1e-3;
@@ -39,10 +43,11 @@ void InitParametersStub() {
     constants.three = 1.5;
 }
 
-void InitBoundaryConditionStub() {
+void InitBoundaryConditionStub(BoundaryInfo &boundary_info) {
     boundary_info.wall_velocity_x = 0.10;
     boundary_info.wall_velocity_y = 0.00;
 
     boundary_info.velocity_inflow_x = 0.10;
     boundary_info.velocity_inflow_y = 0.00;
+    boundary_info.density_outflow = 1.0;
 }

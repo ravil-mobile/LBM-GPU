@@ -6,9 +6,9 @@
 void CUDA_CHECK_ERROR(); 
 void HANDLE_ERROR(cudaError_t);
 
-void CopyConstantsToDevice(struct SimulationParametes parameters,
-                           struct Constants constants,
-                           struct BoundaryInfo boundary_info,
+void CopyConstantsToDevice(const struct SimulationParametes parameters,
+                           const struct Constants constants,
+                           const struct BoundaryInfo boundary_info,
                            int *coords,
                            real *weights);
 

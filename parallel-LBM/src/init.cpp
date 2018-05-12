@@ -3,29 +3,20 @@
 #include "headers/parameters.h"
 #include "headers/helper.h"
 
-void InitPopulationField(real* population) {
-    int shift = 0;
-
-    for (int component = 0; component < parameters.discretization; ++component) {
-        shift = parameters.num_lattices * component;
-        for (int i = 0; i < parameters.num_lattices; ++i) {
-            population[i + shift] = weights[component];
-        }
-    }
-}
-
 void InitFlagFieldStub(int* flag_field,
-                       char* grid_file) {
+                       char* grid_file,
+                       const struct SimulationParametes &parameters) {
     int most_left_index = 0;
     int most_right_index = parameters.width - 1;
+    int width = parameters.width;
 
     for (int i = 0; i < parameters.height; ++i) {
         // init left wall
-        int index = GetIndex(most_left_index, i);
+        int index = GetIndex(most_left_index, i, width);
         flag_field[index] = INFLOW;
 
         // init right wall
-        index = GetIndex(most_right_index, i);
+        index = GetIndex(most_right_index, i, width);
         flag_field[index] = OUTFLOW;
     }
 
@@ -33,11 +24,11 @@ void InitFlagFieldStub(int* flag_field,
     int top_index = parameters.height - 1;
     for (int i = 0; i < parameters.width; ++i) {
         // init top (moving) wall
-        int index = GetIndex(i, top_index);
+        int index = GetIndex(i, top_index, width);
         flag_field[index] = WALL;
 
         // init bottom wall
-        index = GetIndex(i, bottom_index);
+        index = GetIndex(i, bottom_index, width);
         flag_field[index] = WALL;
     }
 
@@ -62,8 +53,7 @@ void InitFlagFieldStub(int* flag_field,
             real delta_y = real(center[1] - j);
             real distance = sqrt(delta_x * delta_x + delta_y * delta_y);
             if (real(radius) > distance) {
-                int index = GetIndex(i, j);
-                index = GetIndex(i, j);
+                int index = GetIndex(i, j, width);
                 flag_field[index] = WALL;
             }
         }

@@ -6,13 +6,17 @@
 #ifndef SEQUENTIAL_LBM_SRC_HEADERS_HELPER_H_
 #define SEQUENTIAL_LBM_SRC_HEADERS_HELPER_H_
 
-int GetIndex(int index_i, int index_j, int dim = 1);
+int GetIndex(int index_i, int index_j, const int width);
 
 void SetupGnuPlots(gnuplot_ctrl *velocity_frame,
-                   gnuplot_ctrl *density_frame);
+                   gnuplot_ctrl *density_frame,
+                   const struct SimulationParametes &parameters);
 
-void DisplayResults(real *velocity, gnuplot_ctrl *velocity_frame,
-                    real *density = 0, gnuplot_ctrl *density_frame = 0);
+void DisplayResults(real *velocity,
+                    gnuplot_ctrl *velocity_frame,
+                    const struct SimulationParametes &parameters,
+                    real *density = 0, 
+                    gnuplot_ctrl *density_frame = 0);
 
 template<typename T>
 void PrintArray(T *array, int size) {

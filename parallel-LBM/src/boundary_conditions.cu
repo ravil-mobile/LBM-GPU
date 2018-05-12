@@ -187,29 +187,10 @@ const BoundaryConditions * BoundaryConditionsHandler::GetDeviceData() {
     return &dev_boundary_conditions;
 }
 
-
-void TreatBoundary(ptr_boundary_func *boundary_update,
-                   int *boundary_coords,
-                   int num_boundaries,
-                   real *population,
-                   real *velocity,
-                   real *density) {
-    for (int component = 0; component < parameters.discretization; ++component) {
-        for (int index = 0; index < num_boundaries; ++index) {
-            int shift = component * num_boundaries;
-            boundary_update[index + shift](component,
-                                           boundary_coords[index],
-                                           population,
-                                           velocity,
-                                           density);
-        }
-    }
-}
-
-
 void PrecomputeWallBC(int component,
                       int coordinate,
-                      struct WallBC &element) {
+                      struct WallBC &element,
+                      const struct SimulationParametes &parameters) {
     int num_lattices = parameters.num_lattices;
     int num_directions = parameters.discretization;
 
@@ -218,14 +199,17 @@ void PrecomputeWallBC(int component,
 
     int inverse_component = inverse_indices[component];
 
-    int shift = GetIndex(i, j);
+    int shift = GetIndex(i, j, parameters.width);
     element.target_index = coordinate + inverse_component * num_lattices;
     element.source_index = (coordinate + shift) + component * num_lattices;
 }
 
 void PrecomputeMovingWallBC(int component,
                             int coordinate,
-                            struct MovingWallBC &element) {
+                            struct MovingWallBC &element,
+                            const struct SimulationParametes &parameters,
+                            const struct Constants &constants,
+                            const struct BoundaryInfo &boundary_info) {
     int num_lattices = parameters.num_lattices;
     int num_directions = parameters.discretization;
 
@@ -234,7 +218,7 @@ void PrecomputeMovingWallBC(int component,
 
     int inverse_component = inverse_indices[component];
 
-    int shift = GetIndex(i, j);
+    int shift = GetIndex(i, j, parameters.width);
     
     element.scalar_target_index = coordinate;
     element.target_index = coordinate + inverse_component * num_lattices;
@@ -248,7 +232,10 @@ void PrecomputeMovingWallBC(int component,
 
 void PrecomputeInflowBC(int component,
                         int coordinate,
-                        struct InflowBC &element) {
+                        struct InflowBC &element,
+                        const struct SimulationParametes &parameters,
+                        const struct Constants &constants,
+                        const struct BoundaryInfo &boundary_info) {
     int num_lattices = parameters.num_lattices;
     int num_directions = parameters.discretization;
 
@@ -256,7 +243,7 @@ void PrecomputeInflowBC(int component,
     int j = coords[component + num_directions];
     
     int inverse_component = inverse_indices[component];
-    int shift = GetIndex(i, j);
+    int shift = GetIndex(i, j, parameters.width);
     
     element.scalar_target_index = coordinate;
     element.target_index = coordinate + inverse_component * num_lattices;
@@ -281,7 +268,8 @@ void PrecomputeInflowBC(int component,
 
 void PrecomputeOutflowBC(int component,
                          int coordinate,
-                         struct OutflowBC &element) {
+                         struct OutflowBC &element,
+                         const struct SimulationParametes &parameters) {
 
     int num_lattices = parameters.num_lattices;
     int num_directions = parameters.discretization;
@@ -290,7 +278,7 @@ void PrecomputeOutflowBC(int component,
     int j = coords[component + num_directions];
     
     int inverse_component = inverse_indices[component];
-    int shift = GetIndex(i, j);
+    int shift = GetIndex(i, j, parameters.width);
         
     element.source_index = (coordinate + shift) + component * num_lattices;
     element.scalar_target_index = coordinate;

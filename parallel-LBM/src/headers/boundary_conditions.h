@@ -65,18 +65,26 @@ private:
 
 void PrecomputeWallBC(int component,
                       int coordinate,
-                      struct WallBC &element);
+                      struct WallBC &element,
+                      const struct SimulationParametes &parameters);
 
 void PrecomputeMovingWallBC(int component,
                             int coordinate,
-                            struct MovingWallBC &element);
+                            struct MovingWallBC &element,
+                            const struct SimulationParametes &parameters,
+                            const struct Constants &constants,
+                            const struct BoundaryInfo &boundary_info);
 
 void PrecomputeInflowBC(int component,
                         int coordinate,
-                        struct InflowBC &element);
+                        struct InflowBC &element,
+                        const struct SimulationParametes &parameters,
+                        const struct Constants &constants,
+                        const struct BoundaryInfo &boundary_info);
 
 void PrecomputeOutflowBC(int component,
                          int coordinate,
-                         struct OutflowBC &element);
+                         struct OutflowBC &element, 
+                         const struct SimulationParametes &parameters);
 
 #endif  // SEQUENTIAL_LBM_SRC_HEADERS_BOUNDARY_CONDITIONS_H_

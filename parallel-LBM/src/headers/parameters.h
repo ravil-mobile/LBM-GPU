@@ -19,22 +19,23 @@ struct SimulationParametes {
     int num_lattices;
     int steps_per_report;
 };
-extern struct SimulationParametes parameters;
+//extern struct SimulationParametes parameters;
 
 struct Constants {
     real one;
     real two;
     real three;
 };
-extern struct Constants constants;
+//extern struct Constants constants;
 
 struct BoundaryInfo {
     real wall_velocity_x;
     real wall_velocity_y;
     real velocity_inflow_x;
     real velocity_inflow_y;
+    real density_outflow;
 };
-extern struct BoundaryInfo boundary_info;
+//extern struct BoundaryInfo boundary_info;
 
 enum flags {FLUID, WALL, MOVING_WALL, INFLOW, OUTFLOW};
 enum func_type{ONE, TWO};

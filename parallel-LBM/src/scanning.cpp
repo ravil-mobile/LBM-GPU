@@ -7,9 +7,13 @@
 #include "headers/init.h"
 
 void ScanFlagField(int *flag_field,
-                   BoundaryConditionsHandler &bc_handler) {
+                   BoundaryConditionsHandler &bc_handler,
+                   const struct SimulationParametes &parameters,
+                   const struct Constants &constants,
+                   const struct BoundaryInfo &boundary_info) {
     int num_directions = parameters.discretization;
-   
+    int width = parameters.width;
+
     std::vector<struct WallBC> wall_elements;
     std::vector<struct MovingWallBC> mov_wall_elements;
     std::vector<struct InflowBC> inflow_elements;
@@ -17,14 +21,14 @@ void ScanFlagField(int *flag_field,
 
     for (int j = 0; j < parameters.height; ++j) {
         for (int i = 0; i < parameters.width; ++i) {
-            int scalar_self_index = GetIndex(i, j);
+            int scalar_self_index = GetIndex(i, j, width);
 
             if (flag_field[scalar_self_index] == FLUID) {
                 for (int component = 0; component < num_directions; ++component) {
                     int ii = coords[component];
                     int jj = coords[component + num_directions];
 
-                    int scalar_neighbour_index = GetIndex(i + ii, j + jj);
+                    int scalar_neighbour_index = GetIndex(i + ii, j + jj, width);
                     int shift = component * parameters.num_lattices;
                     
                     int neighbour_flag = flag_field[scalar_neighbour_index];
@@ -36,7 +40,8 @@ void ScanFlagField(int *flag_field,
                                 struct WallBC wall;
                                 PrecomputeWallBC(component,
                                                  scalar_self_index,
-                                                 wall);
+                                                 wall,
+                                                 parameters);
 
                                 wall_elements.push_back(wall);
                                 break;
@@ -44,7 +49,10 @@ void ScanFlagField(int *flag_field,
                                 struct MovingWallBC moving_wall;
                                 PrecomputeMovingWallBC(component,
                                                        scalar_self_index,
-                                                       moving_wall);
+                                                       moving_wall,
+                                                       parameters,
+                                                       constants,
+                                                       boundary_info);
 
                                 mov_wall_elements.push_back(moving_wall);
                                 break;
@@ -53,7 +61,10 @@ void ScanFlagField(int *flag_field,
                                 
                                 PrecomputeInflowBC(component,
                                                    scalar_self_index,
-                                                   inlet_lattice);
+                                                   inlet_lattice,
+                                                   parameters,
+                                                   constants,
+                                                   boundary_info);
 
                                 inflow_elements.push_back(inlet_lattice); 
                                 break;
@@ -61,7 +72,8 @@ void ScanFlagField(int *flag_field,
                                 struct OutflowBC outlet_lattice;
                                 PrecomputeOutflowBC(component,
                                                     scalar_self_index,
-                                                    outlet_lattice);
+                                                    outlet_lattice,
+                                                    parameters);
 
                                 outflow_elements.push_back(outlet_lattice);
                                 break;

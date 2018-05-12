@@ -26,9 +26,9 @@ void HANDLE_ERROR(cudaError_t error) {
     }
 }
 
-void CopyConstantsToDevice(struct SimulationParametes parameters,
-                           struct Constants constants,
-                           struct BoundaryInfo boundary_info,
+void CopyConstantsToDevice(const struct SimulationParametes parameters,
+                           const struct Constants constants,
+                           const struct BoundaryInfo boundary_info,
                            int *coords,
                            real *weights) {
     HANDLE_ERROR(cudaMemcpyToSymbol(parameters_device,
@@ -313,7 +313,9 @@ __global__ void TreatOutflowBC(int *indices,
 */
         real expansion_sum = velocity_expansion + velocity_expansion_inv;
 
-        population[target] = (weights_device[component] * density[index] * expansion_sum) 
+        population[target] = (weights_device[component] 
+                              * boundary_info_device.density_outflow
+                              * expansion_sum) 
                            - population[source];
 
 
