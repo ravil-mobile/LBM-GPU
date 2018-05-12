@@ -4,7 +4,7 @@ project(lbm)
 
 find_package(CUDA REQUIRED)
 
-set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS}; -O2; -std=c++11; -arch=sm_20; -Xptxas -v)
+set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS}; -O1; -std=c++11; -arch=sm_20; -Xptxas -v)
 
 add_definitions(-DGRAPHICS -DDEBUG)
 #add_definitions(-DDEBUG)

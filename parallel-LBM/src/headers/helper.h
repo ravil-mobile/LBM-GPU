@@ -8,8 +8,6 @@
 
 int GetIndex(int index_i, int index_j, int dim = 1);
 
-real ComputeVectorMagnitude(real a, real b);
-
 void SetupGnuPlots(gnuplot_ctrl *velocity_frame,
                    gnuplot_ctrl *density_frame);
 

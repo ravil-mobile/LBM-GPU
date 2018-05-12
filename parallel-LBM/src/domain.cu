@@ -1,3 +1,5 @@
+#include <algorithm>
+
 #include "headers/domain.h"
 #include "headers/parameters.h"
 #include "headers/kernels.h"
@@ -5,6 +7,7 @@
 DomainHandler::DomainHandler() {
     dev_domain.dev_flag_field = 0; 
     dev_domain.dev_density = 0;
+    dev_domain.dev_velocity_magnitude = 0;
     dev_domain.dev_velocity = 0;
     dev_domain.dev_population = 0;
     dev_domain.dev_swap_buffer = 0;
@@ -21,6 +24,10 @@ DomainHandler::~DomainHandler() {
         
     if (dev_domain.dev_velocity != NULL) {
         HANDLE_ERROR(cudaFree(dev_domain.dev_velocity));
+    }
+
+    if (dev_domain.dev_velocity_magnitude != NULL) {
+        HANDLE_ERROR(cudaFree(dev_domain.dev_velocity_magnitude));
     }
 
     if (dev_domain.dev_population != NULL) {
@@ -45,6 +52,7 @@ void DomainHandler::InitDomainOnDevice(SimulationParametes &parameters,
     HANDLE_ERROR(cudaMalloc(&(dev_domain.dev_flag_field), size * sizeof(int)));
     HANDLE_ERROR(cudaMalloc(&(dev_domain.dev_density), size * sizeof(real)));
     HANDLE_ERROR(cudaMalloc(&(dev_domain.dev_velocity), dimension * size * sizeof(real)));
+    HANDLE_ERROR(cudaMalloc(&(dev_domain.dev_velocity_magnitude), size * sizeof(real)));
     HANDLE_ERROR(cudaMalloc(&(dev_domain.dev_population), discretization * size * sizeof(real)));
     HANDLE_ERROR(cudaMalloc(&(dev_domain.dev_swap_buffer), discretization * size * sizeof(real)));   
 
@@ -65,6 +73,11 @@ void DomainHandler::InitDomainOnDevice(SimulationParametes &parameters,
     InitArrayDevice<<<num_blocks, num_threads>>>(dev_domain.dev_velocity,
                                                  init_value,
                                                  dimension * size);
+    
+    InitArrayDevice<<<num_blocks, num_threads>>>(dev_domain.dev_velocity_magnitude,
+                                                 init_value,
+                                                 size);
+
 
     for (int i = 0; i < discretization; ++i) {
 
@@ -81,7 +94,11 @@ void DomainHandler::InitDomainOnDevice(SimulationParametes &parameters,
     HANDLE_ERROR(cudaDeviceSynchronize());
 }
 
-Domain * DomainHandler::GetDeviceData() {
+void DomainHandler::SwapPopulationFields() {
+    std::swap(dev_domain.dev_population, dev_domain.dev_swap_buffer);
+}
+
+const Domain * DomainHandler::GetDeviceData() {
     return &dev_domain;
 }
 

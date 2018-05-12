@@ -5,8 +5,9 @@
 
 struct Domain {
     int *dev_flag_field; 
-    real *dev_density;  
-    real *dev_velocity; 
+    real *dev_density;
+    real *dev_velocity;
+    real *dev_velocity_magnitude;
     real *dev_population; 
     real *dev_swap_buffer;
 };
@@ -22,7 +23,8 @@ public:
                             int num_threads,
                             int num_blocks);
     
-    Domain * GetDeviceData();
+    void SwapPopulationFields();
+    const Domain * GetDeviceData();
 private:
     Domain dev_domain;
 };

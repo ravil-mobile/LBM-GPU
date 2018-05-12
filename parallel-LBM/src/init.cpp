@@ -2,7 +2,6 @@
 #include "headers/init.h"
 #include "headers/parameters.h"
 #include "headers/helper.h"
-#include "headers/collision.h"
 
 void InitPopulationField(real* population) {
     int shift = 0;
@@ -16,9 +15,6 @@ void InitPopulationField(real* population) {
 }
 
 void InitFlagFieldStub(int* flag_field,
-                       ptr_update_func *update_density,
-                       ptr_update_func *update_velocity,
-                       ptr_stream_func *stream_element,
                        char* grid_file) {
     int most_left_index = 0;
     int most_right_index = parameters.width - 1;
@@ -26,17 +22,11 @@ void InitFlagFieldStub(int* flag_field,
     for (int i = 0; i < parameters.height; ++i) {
         // init left wall
         int index = GetIndex(most_left_index, i);
-        flag_field[index] = WALL;
-        update_density[index] = UpdateDensityBC;
-        update_velocity[index] = UpdateVelocityBC;
-        stream_element[index] = StreamBC;
+        flag_field[index] = INFLOW;
 
         // init right wall
         index = GetIndex(most_right_index, i);
-        flag_field[index] = WALL;
-        update_density[index] = UpdateDensityBC;
-        update_velocity[index] = UpdateVelocityBC;
-        stream_element[index] = StreamBC;
+        flag_field[index] = OUTFLOW;
     }
 
     int bottom_index = 0;
@@ -44,20 +34,14 @@ void InitFlagFieldStub(int* flag_field,
     for (int i = 0; i < parameters.width; ++i) {
         // init top (moving) wall
         int index = GetIndex(i, top_index);
-        flag_field[index] = MOVING_WALL;
-        update_density[index] = UpdateDensityBC;
-        update_velocity[index] = UpdateVelocityBC;
-        stream_element[index] = StreamBC;
+        flag_field[index] = WALL;
 
         // init bottom wall
         index = GetIndex(i, bottom_index);
         flag_field[index] = WALL;
-        update_density[index] = UpdateDensityBC;
-        update_velocity[index] = UpdateVelocityBC;
-        stream_element[index] = StreamBC;
     }
 
-    
+    /* 
     int obstacle[] = {20, 50, 25, 45};
     for (int j = obstacle[2]; j < obstacle[3]; ++j) {
         for (int i = obstacle[0]; i < obstacle[1]; ++i) {
@@ -68,8 +52,8 @@ void InitFlagFieldStub(int* flag_field,
             stream_element[index] = StreamBC;
         }
     }
+    */
     
-    /*
     int center[] = {315, 315};
     int radius = 30;
     for (int j = (center[1] - radius); j < (center[1] + radius); ++j) {
@@ -81,11 +65,7 @@ void InitFlagFieldStub(int* flag_field,
                 int index = GetIndex(i, j);
                 index = GetIndex(i, j);
                 flag_field[index] = WALL;
-                update_density[index] = UpdateDensityBC;
-                update_velocity[index] = UpdateVelocityBC;
-                stream_element[index] = StreamBC;
             }
         }
     }
-    */
 }

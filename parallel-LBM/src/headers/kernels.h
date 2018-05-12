@@ -14,8 +14,6 @@ void CopyConstantsToDevice(struct SimulationParametes parameters,
 
 __global__ void CheckConstMemoryCopy();
 
-__global__ void SwapFields(real *a, real *b);
-
 __global__ void InitArrayDevice(real *array, real init_value, int size);
 
 __global__ void StreamDevice(real *population,
@@ -46,5 +44,20 @@ __global__ void TreatSlipBC(int *indices,
                             real *density,
                             real *population,
                             int size); 
+
+__global__ void TreatInflowBC(int *indices,
+                              real *data,
+                              real *density,
+                              real *population,
+                              int size);
+
+__global__ void TreatOutflowBC(int *indices,
+                               real *velocity,
+                               real *density,
+                               real *population,
+                               int size);
+
+__global__ void ComputeVelocityMagnitude(real *velocity,
+                                         real *velocity_magnitude);
 
 #endif  // SEQUENTIAL_LBM_SRC_HEADERS_KERNELS_H_

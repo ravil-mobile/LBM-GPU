@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <math.h>
 #include "headers/kernels.h"
 #include "headers/parameters.h"
 #include "headers/boundary_conditions.h"
@@ -8,6 +9,8 @@ __constant__ struct Constants constants_device;
 __constant__ struct BoundaryInfo boundary_info_device;
 __constant__ int coords_device[18];
 __constant__ real weights_device[9];
+__constant__ int inverse_indices_device[9];
+
 
 void CUDA_CHECK_ERROR() {
     cudaError_t error = cudaGetLastError();
@@ -66,15 +69,6 @@ __global__ void CheckConstMemoryCopy() {
 __device__ int GetIndexDevice(int index_i, int index_j) {
     return index_i + index_j * parameters_device.width; 
 }
-
-__global__ void SwapFields(real *a, real *b) {
-    int thread_id = threadIdx.x + blockIdx.x * blockDim.x;
-    if (thread_id == MASTER) {
-        real *temp = a;
-        a = b;
-        b = temp;
-    }
-} 
 
 __global__ void InitArrayDevice(real *array, real init_value, int size) {
     int thread_id = threadIdx.x + blockIdx.x * blockDim.x; 
@@ -241,3 +235,105 @@ __global__ void TreatSlipBC(int *indices,
     }
 }
 
+__global__ void TreatInflowBC(int *indices,
+                              real *data,
+                              real *density,
+                              real *population,
+                              int size) {
+    int thread_id = threadIdx.x + blockIdx.x * blockDim.x;
+    
+    while (thread_id < size) {
+        int target = indices[thread_id];
+        int index = indices[size + thread_id];
+
+
+        population[target] = data[thread_id] * density[index];
+
+        thread_id += blockDim.x * gridDim.x;
+    }
+}
+
+__global__ void TreatOutflowBC(int *indices,
+                               real *velocity,
+                               real *density,
+                               real *population,
+                               int size) {
+
+    int thread_id = threadIdx.x + blockIdx.x * blockDim.x;
+    int num_lattices = parameters_device.num_lattices;
+    int num_directions = parameters_device.discretization;
+    
+    real const_one = constants_device.one;
+    real const_two = constants_device.two;
+    real const_three = constants_device.three;
+
+    while (thread_id < size) {
+        int source = indices[thread_id];
+        int index = indices[size + thread_id];
+        int target = indices[2 * size + thread_id];
+        int component = indices[3 * size + thread_id];
+        
+        real neighbour_velocity_x = velocity[index];
+        real neighbour_velocity_y = velocity[num_lattices + index];
+                
+        real i = coords_device[component];
+        real j = coords_device[num_directions + component];
+
+        
+        real dot_product_uu = neighbour_velocity_x * neighbour_velocity_x
+                            + neighbour_velocity_y * neighbour_velocity_y;
+        
+        real dot_product_cu = -i * neighbour_velocity_x - j * neighbour_velocity_y;
+        real dot_product_cu_inv = i * neighbour_velocity_x + j * neighbour_velocity_y;
+
+
+        real velocity_expansion = (const_one * dot_product_cu)
+                                + (const_two * dot_product_cu * dot_product_cu)
+                                - (const_three * dot_product_uu)
+                                + 1.0;
+
+        real velocity_expansion_inv = (const_one * dot_product_cu_inv)
+                                    + (const_two * dot_product_cu_inv * dot_product_cu_inv)
+                                    - (const_three * dot_product_uu)
+                                    + 1.0;
+
+/*        
+        real equilibrium = weights_device[component]
+                         * density[index]
+                         * velocity_expansion;
+        
+        real equilibrium_inv = weights_device[component]
+                             * density[index]
+                             * velocity_expansion_inv;
+
+        
+        population[target] = equilibrium
+                           + equilibrium_inv
+                           - population[source];
+*/
+        real expansion_sum = velocity_expansion + velocity_expansion_inv;
+
+        population[target] = (weights_device[component] * density[index] * expansion_sum) 
+                           - population[source];
+
+
+        thread_id += blockDim.x * gridDim.x;
+    }
+}
+
+
+__global__ void ComputeVelocityMagnitude(real *velocity,
+                                         real *velocity_magnitude) {
+    int thread_id = threadIdx.x + blockIdx.x * blockDim.x;
+    int size = parameters_device.num_lattices;
+
+    while (thread_id < size) {
+        real velocity_x = velocity[thread_id];
+        real velocity_y = velocity[size + thread_id];
+
+        velocity_magnitude[thread_id] = sqrt(velocity_x * velocity_x +
+                                             velocity_y * velocity_y);
+        thread_id += blockDim.x * gridDim.x;
+    }
+
+}

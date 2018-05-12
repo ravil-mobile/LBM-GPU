@@ -13,10 +13,6 @@ int GetIndex(int index_i, int index_j, int dim) {
     return dim * (index_i + index_j * parameters.width);
 }
 
-real ComputeVectorMagnitude(real a, real b) {
-    return sqrt(a * a + b * b);
-}
-
 void GnuplotCmd(gnuplot_ctrl *frame, std::string command) {
     gnuplot_cmd(frame, const_cast<char*>(command.c_str()));
 }
@@ -68,11 +64,10 @@ void DisplayResults(real *velocity, gnuplot_ctrl *velocity_frame,
     for (int j = 1; j < parameters.height - 1; ++j) {
         for (int i = 1; i < parameters.width - 1; ++i) {
             int index = GetIndex(i, j);
-            real magnitude = ComputeVectorMagnitude(velocity[index],
-                                                    velocity[index + num_lattices]);
+
             velocity_field_file << real(i) << delimiter
                                 << real(j) << delimiter
-                                << magnitude << delimiter
+                                << velocity[index] << delimiter
                                 << std::endl;
             /*
             velocity_field_file << real(i) << delimiter
@@ -100,5 +95,5 @@ void DisplayResults(real *velocity, gnuplot_ctrl *velocity_frame,
     if (density_frame != NULL) {
         GnuplotCmd(density_frame, "splot 'density-data.dat' u 1:2:3");
     }
-    usleep(10000);
+    //usleep(10000);
 }
