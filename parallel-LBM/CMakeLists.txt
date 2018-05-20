@@ -4,7 +4,7 @@ project(lbm)
 
 find_package(CUDA REQUIRED)
 
-set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS}; -O2; -std=c++11; -arch=sm_20; -Xptxas -v)
+set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS}; -O2; -std=c++11; -arch=sm_30; -Xptxas -v)
 
 add_definitions(-DGRAPHICS -DDEBUG)
 #add_definitions(-DDEBUG)
@@ -14,7 +14,7 @@ file(GLOB SRCS "./src/*.cpp" "./src/*.cu")
 include_directories(${CMAKE_SOURCE_DIR}/headers)
 
 cuda_add_executable(lbm ${SRCS})
-target_link_libraries(lbm -lm
+target_link_libraries(lbm -lm -lglfw -lGL -lGLEW
                       ${CUDA_LIBRARIES}
                       ${CUDA_CUBLAS_LIBRARIES}
                       ${CUDA_cusparse_LIBRARY})
