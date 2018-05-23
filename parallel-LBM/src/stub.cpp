@@ -38,6 +38,10 @@ void InitParametersStub(SimulationParametes &parameters,
     parameters.num_lattices = parameters.width * parameters.height;
     parameters.steps_per_report = 100;
 
+    parameters.max_velocity_rendering = 0.125;
+    parameters.min_velocity_rendering = 0.00000001;
+
+
     constants.one = 3.0;
     constants.two = 4.5;
     constants.three = 1.5;

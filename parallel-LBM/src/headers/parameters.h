@@ -18,6 +18,9 @@ struct SimulationParametes {
     int height;
     int num_lattices;
     int steps_per_report;
+  real max_velocity_rendering;
+  real min_velocity_rendering;
+
 };
 //extern struct SimulationParametes parameters;
 

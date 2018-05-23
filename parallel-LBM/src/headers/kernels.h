@@ -60,4 +60,5 @@ __global__ void TreatOutflowBC(int *indices,
 __global__ void ComputeVelocityMagnitude(real *velocity,
                                          real *velocity_magnitude);
 
+__global__ void FloatToRGB (uchar4 *ptr, real* velocity_magnitude, int* flag_field);
 #endif  // SEQUENTIAL_LBM_SRC_HEADERS_KERNELS_H_
