@@ -152,19 +152,19 @@ __global__ void UpdateVelocityFieldDevice(real *velocity,
 __global__ void UpdatePopulationFieldDevice(real *velocity,
                                             real *population,
                                             real *density) {
-    int num_lattices = parameters_device.num_lattices;
-    int num_directions = parameters_device.discretization;  
+    //int num_lattices = parameters_device.num_lattices;
+    short int num_directions = parameters_device.discretization; 
 
-    real relaxation = parameters_device.relaxation;
+    //real relaxation = parameters_device.relaxation;
     real const_one = constants_device.one;
     real const_two = constants_device.two;
     real const_three = constants_device.three;
 
     int thread_id = threadIdx.x + blockIdx.x * blockDim.x;
     
-    while (thread_id < num_lattices) {
+    while (thread_id < parameters_device.num_lattices) {
         real local_velocity_x = velocity[thread_id];
-        real local_velocity_y = velocity[num_lattices + thread_id];
+        real local_velocity_y = velocity[parameters_device.num_lattices + thread_id];
 
         real dot_product_uu = local_velocity_x * local_velocity_x
                             + local_velocity_y * local_velocity_y;
@@ -175,7 +175,11 @@ __global__ void UpdatePopulationFieldDevice(real *velocity,
 
             real dot_product_cu = vector_component_x * local_velocity_x
                                 + vector_component_y * local_velocity_y;
-
+            /*
+            real dot_product_cu = coords_device[component] * local_velocity_x
+                                + coords_device[num_directions + component] * local_velocity_y;
+            */
+            
             real velocity_expansion = (const_one * dot_product_cu)
                                     + (const_two * dot_product_cu * dot_product_cu)
                                     - (const_three * dot_product_uu)
@@ -185,8 +189,8 @@ __global__ void UpdatePopulationFieldDevice(real *velocity,
                              * density[thread_id]
                              * velocity_expansion;
 
-            int shift = component * num_lattices;
-            population[shift + thread_id] -= (relaxation
+            int shift = component * parameters_device.num_lattices;
+            population[shift + thread_id] -= (parameters_device.relaxation
                                            * (population[shift + thread_id] - equilibrium));
         }
 

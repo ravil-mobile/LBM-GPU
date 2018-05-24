@@ -96,7 +96,7 @@ int main() {
 
     for (int gpu_instance = 0; gpu_instance < gpu_count; ++ gpu_instance) {
         HANDLE_ERROR(cudaGetDeviceProperties(&property, gpu_instance));
-#ifdef DEBUG
+//#ifdef DEBUG
         printf(" --- General Information for device %d ---\n", gpu_instance);
         printf("name: %s\n", property.name);
         
@@ -104,7 +104,9 @@ int main() {
         printf("max num. threads per block: %d\n", property.maxThreadsPerBlock);
         printf("max num. registers per block: %d\n", property.regsPerBlock);
         printf("size of constant memory: %d\n", property.totalConstMem);
-#endif
+        printf("The number of blocks allowed along x dimension of a grid: %d\n",
+               property.maxGridSize[0]);
+//#endif
         if (property.maxThreadsPerBlock > max_num_threads_per_block) {
             gpu_device = gpu_instance;
             max_num_threads_per_block = property.maxThreadsPerBlock;
@@ -155,18 +157,25 @@ int main() {
     const int MAX_NUM_BLOCKS = (parameters.num_lattices + MAX_NUM_THREADS) / MAX_NUM_THREADS;
 
     const int MAX_NUM_USED_REGISTERS_PER_WARP = 35;
+<<<<<<< HEAD
     int min_num_threads_estimation = max_num_registers_per_block / MAX_NUM_USED_REGISTERS_PER_WARP;
     const int MIN_NUM_THREADS = min (min_num_threads_estimation, MAX_NUM_THREADS);
+=======
+    int min_num_threads_estimation = max_num_registers_per_block / MAX_NUM_USED_REGISTERS_PER_WARP; 
+    const int MIN_NUM_THREADS = min(min_num_threads_estimation, MAX_NUM_THREADS);
+>>>>>>> 5dab4f8... Last commit in the 'ravil' branch
     const int MIN_NUM_BLOCKS = (parameters.num_lattices + MIN_NUM_THREADS) / MIN_NUM_THREADS;
 
-#ifdef DEBUG
     printf(" --- num elements: %d --- \n", parameters.num_lattices);
     printf(" --- max #threads %d: max #blocks: %d --- \n", MAX_NUM_THREADS, MAX_NUM_BLOCKS);
     printf(" --- min #threads %d: min #blocks: %d --- \n", MIN_NUM_THREADS, MIN_NUM_BLOCKS);
 
+<<<<<<< HEAD
 #endif
 
 
+=======
+>>>>>>> 5dab4f8... Last commit in the 'ravil' branch
     // allocate constant data into the DEVICE
     CopyConstantsToDevice(parameters,
                           constants,
@@ -273,7 +282,7 @@ int main() {
         StreamDevice<<<MAX_NUM_BLOCKS, MAX_NUM_THREADS>>>(domain->dev_population,
                                                           domain->dev_swap_buffer,
                                                           domain->dev_flag_field);
-        //CUDA_CHECK_ERROR(); 
+        CUDA_CHECK_ERROR(); 
         
         // apply boundary consitions
         if (boundaries->num_wall_elements != 0) {
@@ -282,7 +291,7 @@ int main() {
             TreatNonSlipBC<<<blocks, threads>>>(boundaries->bc_wall_indices,
                                                 domain->dev_swap_buffer,
                                                 boundaries->num_wall_elements); 
-            //CUDA_CHECK_ERROR();
+            CUDA_CHECK_ERROR();
         }
 
         if (boundaries->num_moving_wall_elements != 0) {
@@ -293,7 +302,7 @@ int main() {
                                          domain->dev_density,
                                          domain->dev_swap_buffer,
                                          boundaries->num_moving_wall_elements);
-            //CUDA_CHECK_ERROR();
+            CUDA_CHECK_ERROR();
         }
 
         if (boundaries->num_inflow_elements != 0) {
@@ -304,7 +313,7 @@ int main() {
                                                domain->dev_density,
                                                domain->dev_swap_buffer,
                                                boundaries->num_inflow_elements);
-            //CUDA_CHECK_ERROR();
+            CUDA_CHECK_ERROR();
         }
 
         if (boundaries->num_outflow_elements != 0) {
@@ -315,7 +324,7 @@ int main() {
                                                 domain->dev_density,
                                                 domain->dev_swap_buffer,
                                                 boundaries->num_outflow_elements);
-            //CUDA_CHECK_ERROR();
+            CUDA_CHECK_ERROR();
         }
 
 
@@ -327,28 +336,29 @@ int main() {
                                                                       domain->dev_population,
                                                                       domain->dev_flag_field);
 
-        //CUDA_CHECK_ERROR(); 
+        CUDA_CHECK_ERROR(); 
 
-        
+
         UpdateVelocityFieldDevice<<<MAX_NUM_BLOCKS, MAX_NUM_THREADS>>>(domain->dev_velocity,
                                                                        domain->dev_population,
                                                                        domain->dev_density,
                                                                        domain->dev_flag_field);
-        //CUDA_CHECK_ERROR(); 
+        CUDA_CHECK_ERROR(); 
 
-        
+        /* 
         UpdatePopulationFieldDevice<<<MIN_NUM_BLOCKS, MIN_NUM_THREADS>>>(domain->dev_velocity,
                                                                          domain->dev_population,
                                                                          domain->dev_density);
-        //CUDA_CHECK_ERROR(); 
+        CUDA_CHECK_ERROR(); 
+        */
         
-        /*
-        threads = 468;
+        threads = 192;
         blocks = (parameters.num_lattices + threads) / threads; 
         UpdatePopulationFieldDevice<<<blocks, threads>>>(domain->dev_velocity,
                                                          domain->dev_population,
                                                          domain->dev_density);
-        */
+        
+        CUDA_CHECK_ERROR();
 
 #ifdef DEBUG
 

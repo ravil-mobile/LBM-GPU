@@ -14,7 +14,7 @@ void ReadInputFilesStub(struct SimulationParametes &parameters,
 void InitParametersStub(SimulationParametes &parameters,
                         Constants &constants) {
     parameters.simulation_time = 1.0;
-    parameters.num_time_steps = 2000000;
+    parameters.num_time_steps = 200000000;
     parameters.dimension = 2;
     parameters.discretization = 9;
     parameters.delta_x = 0.577 * 1e-3;
