@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <math.h>
+#include "cublas_v2.h"
+
 #include "headers/kernels.h"
 #include "headers/parameters.h"
 #include "headers/boundary_conditions.h"
@@ -16,13 +18,21 @@ void CUDA_CHECK_ERROR() {
     cudaError_t error = cudaGetLastError();
     if (error != cudaSuccess) {
         printf("CUDA ERROR: %s\n", cudaGetErrorString(error));
+        exit(EXIT_FAILURE);
     }
 }
 
 void HANDLE_ERROR(cudaError_t error) {
     if (error != cudaSuccess) {
         printf("CUDA STATUS: %s\n", cudaGetErrorString(error));
-        exit(1);
+        exit(EXIT_FAILURE);
+    }
+}
+
+void HANDLE_CUBLAS_ERROR(cublasStatus_t stat) {
+    if (stat != CUBLAS_STATUS_SUCCESS) {
+        printf("ERROR: cublas failed\n");  
+        exit(EXIT_FAILURE);
     }
 }
 
@@ -370,8 +380,6 @@ __global__ void FloatToRGB( uchar4 *ptr, real* velocity_magnitude, int* flag_fie
         real min_velocity = parameters_device.min_velocity_rendering;
         real avg_velocity = (max_velocity + min_velocity) / 2;
         real distance = max_velocity - avg_velocity;
-
-
 
         unsigned int red_hue, blue_hue, green_hue;
 

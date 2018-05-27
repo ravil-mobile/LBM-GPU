@@ -1,11 +1,14 @@
+#include "cublas_v2.h"
+
 #include "parameters.h"
 #include "boundary_conditions.h"
+
 #ifndef SEQUENTIAL_LBM_SRC_HEADERS_KERNELS_H_
 #define SEQUENTIAL_LBM_SRC_HEADERS_KERNELS_H_
 
 void CUDA_CHECK_ERROR(); 
 void HANDLE_ERROR(cudaError_t);
-
+void HANDLE_CUBLAS_ERROR(cublasStatus_t stat);
 void CopyConstantsToDevice(const struct SimulationParametes parameters,
                            const struct Constants constants,
                            const struct BoundaryInfo boundary_info,

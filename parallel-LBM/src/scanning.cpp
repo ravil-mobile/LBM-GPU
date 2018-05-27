@@ -4,7 +4,6 @@
 #include "headers/scanning.h"
 #include "headers/boundary_conditions.h"
 #include "headers/helper.h"
-#include "headers/init.h"
 
 void ScanFlagField(int *flag_field,
                    BoundaryConditionsHandler &bc_handler,

@@ -1,9 +1,10 @@
 #ifdef GRAPHICS
 #define GLEW_STATIC
-#include<GL/glew.h>
-#include<GLFW/glfw3.h>
-#include<cuda_gl_interop.h>
+    #include<GL/glew.h>
+    #include<GLFW/glfw3.h>
+    #include<cuda_gl_interop.h>
 #endif
+
 #include "cublas_v2.h"
 #include <cuda_runtime.h>
 
@@ -14,168 +15,92 @@
 #include <stdio.h>
 #include <time.h>
 #include <iostream>
+#include <argp.h>
 
 #include "headers/parameters.h"
-#include "headers/init.h"
-#include "headers/stub.h"
 #include "headers/scanning.h"
 #include "headers/boundary_conditions.h"
-#include "headers/gnuplot_i.h"
 #include "headers/helper.h"
 #include "headers/kernels.h"
 #include "headers/domain.h"
+#include "headers/helper_cuda.h"
 
-const int SCR_HEIGHT = 600;
-const int SCR_WIDTH = 800; 
+const int SCR_HEIGHT = 630;
+const int SCR_WIDTH = 930; 
 
 // process key inputs to close window
-void processInput (GLFWwindow* window)
-{
+void processInput (GLFWwindow* window) {
 	// if the escape key has been pressed
 	// otherwise glfwGetKey returns GFLW_RELEASE
-	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS )
-	{
+	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
 		glfwSetWindowShouldClose( window, true );
 	}
 }
 
 // Create frame resize callback function
-void framebuffer_size_callback( GLFWwindow* window, int height, int width)
-{
+void framebuffer_size_callback( GLFWwindow* window, int height, int width) {
 	glViewport(0,0, width, height);
 }
-
-/*__global__ void kernel( uchar4 *ptr, real* velocity_magnitude, int* flag_field ,int size )
-{
-  // map from threadIdx/BlockIdx to pixel position
-  int index = threadIdx.x + blockIdx.x * blockDim.x;
-  int stride = blockDim.x * gridDim.x;
-
-  for (int i = index; i < size; i += stride )
-    {
-      if ( flag_field[index] == WALL )
-        {
-          ptr[index].x = 0;
-          ptr[index].y = 0;
-          ptr[index].z = 0;
-          ptr[index].w = 255;
-        }
-      else {
-        float val = velocity_magnitude[index]; 
-        // accessing uchar4 vs unsigned char*
-
-        // assuming velocity magnitudes are b/w 0 and 1
-        ptr[index].x = (int)(val * 255 );
-        ptr[index].y = (int)(val * 255);
-        ptr[index].z = (int)(val * 255) ;
-        ptr[index].w = 255;
-      }
-    }
-    }*/
 
 
 // global variables for cuda interop
 GLuint buffer_object;
 cudaGraphicsResource * resource;
 
-int main() {
 
-  // cublas vars
-  cublasHandle_t handle;
-  cublasStatus_t stat;
+int main(int argc, char **argv) {
 
-    // choose a proper gpu device with max num threads per block
-    cudaDeviceProp property;
-    int gpu_count = 0;
-    int gpu_device = 0;
-    int max_num_threads_per_block = 0;
-    int max_num_registers_per_block = 0;
+    static struct argp_option options[] = {
+        {"parameters",  'p', "FILE", 0, "Sets path to a parameter file"},
+        {"boundary-cond", 'b', "FILE", 0, "Sets path to a boundary conditions file"},
+        {"mesh", 'm', "FILE", 0, "Sets path to a mesh file"},
+        {"threads-distr", 't', "FILE", 0, "Sets path to a threads distribution file"},
+        { 0 }
+    };
 
-    HANDLE_ERROR(cudaGetDeviceCount(&gpu_count));
-    printf("number of gpu devices detected: %d\n", gpu_count);
-
-    for (int gpu_instance = 0; gpu_instance < gpu_count; ++ gpu_instance) {
-        HANDLE_ERROR(cudaGetDeviceProperties(&property, gpu_instance));
-//#ifdef DEBUG
-        printf(" --- General Information for device %d ---\n", gpu_instance);
-        printf("name: %s\n", property.name);
-        
-        printf("warp size: %d\n", property.warpSize);
-        printf("max num. threads per block: %d\n", property.maxThreadsPerBlock);
-        printf("max num. registers per block: %d\n", property.regsPerBlock);
-        printf("size of constant memory: %d\n", property.totalConstMem);
-        printf("The number of blocks allowed along x dimension of a grid: %d\n",
-               property.maxGridSize[0]);
-//#endif
-        if (property.maxThreadsPerBlock > max_num_threads_per_block) {
-            gpu_device = gpu_instance;
-            max_num_threads_per_block = property.maxThreadsPerBlock;
-            max_num_registers_per_block = property.regsPerBlock;
-        }
-    }
-
-    // read the enviroment variable "MAX_NUM_THREADS_PER_BLOCK"
-    // use the maximum value provide by the DEVICE if the variable has not been defined
-    char* str_num_threads = getenv ("MAX_NUM_THREADS_PER_BLOCK");
-    if (str_num_threads != NULL) {
-        int num_threads = atoi(str_num_threads);
-        if (num_threads != 0) {
-            max_num_threads_per_block = num_threads;
-        }
-    } 
-
-    HANDLE_ERROR(cudaSetDevice(gpu_device));
-    HANDLE_ERROR(cudaGetDeviceProperties(&property, gpu_device));
-    printf("\n --- %s: device has been chosen --- \n", property.name);
-    printf(" --- Number threads per block: %d --- \n", max_num_threads_per_block);
-    printf(" --- Number registers per block: %d --- \n", property.regsPerBlock);
-
-    // initialize cublas
-    stat = cublasCreate (&handle);
-    if (stat != CUBLAS_STATUS_SUCCESS) {
-      std::cerr << "CUBLAS initialization failed " << std::endl;
-      return EXIT_FAILURE; 
-    }
-
-
-    struct SimulationParametes parameters;
-    struct BoundaryInfo boundary_info;
-    struct Constants constants;
-
-    // read input data
-    char parameter_file[] = "parameter.txt";
-    char boundary_file[] = "boundary.txt";
-    char grid_file[] = "grid.txt";
-    ReadInputFilesStub(parameters,
-                       boundary_info,
-                       constants,
-                       parameter_file,
-                       boundary_file);
+    struct Arguments arguments;
+    arguments.parameters_file = NULL;
+    arguments.boundary_cond_file = NULL;
+    arguments.mesh_file = NULL;
+    arguments.threads_distr_file = NULL;
     
+    static char doc[] = "lbm -- 2D implementation of the Lattice Boltzmann Method in CUDA";
+    static char args_doc[] = "--parameters=FILE --boundary-cond=FILE --mesh=FILE --threads-distr=FILE";
+
+    static struct argp argp = {options, parse_opt, args_doc, doc};
+    argp_parse (&argp, argc, argv, 0, 0, &arguments);
+
+
+    ChooseGPU();
+    int max_num_threads_per_block = 192;
+    int max_num_registers_per_block = 35;
+       
+    // read input data
+    struct SimulationParametes parameters;
+    ReadParameterFile(arguments.parameters_file, parameters);
+
+    struct Constants constants;
+    constants.one = 3.0;
+    constants.two = 4.5;
+    constants.three = 1.5;
+
+    struct BoundaryInfo boundary_info;
+    ReadBoundaryFile(arguments.boundary_cond_file, boundary_info);
+
     // define cuda grid parameters
     const int MAX_NUM_THREADS = max_num_threads_per_block;
     const int MAX_NUM_BLOCKS = (parameters.num_lattices + MAX_NUM_THREADS) / MAX_NUM_THREADS;
 
     const int MAX_NUM_USED_REGISTERS_PER_WARP = 35;
-<<<<<<< HEAD
     int min_num_threads_estimation = max_num_registers_per_block / MAX_NUM_USED_REGISTERS_PER_WARP;
     const int MIN_NUM_THREADS = min (min_num_threads_estimation, MAX_NUM_THREADS);
-=======
-    int min_num_threads_estimation = max_num_registers_per_block / MAX_NUM_USED_REGISTERS_PER_WARP; 
-    const int MIN_NUM_THREADS = min(min_num_threads_estimation, MAX_NUM_THREADS);
->>>>>>> 5dab4f8... Last commit in the 'ravil' branch
     const int MIN_NUM_BLOCKS = (parameters.num_lattices + MIN_NUM_THREADS) / MIN_NUM_THREADS;
 
     printf(" --- num elements: %d --- \n", parameters.num_lattices);
     printf(" --- max #threads %d: max #blocks: %d --- \n", MAX_NUM_THREADS, MAX_NUM_BLOCKS);
     printf(" --- min #threads %d: min #blocks: %d --- \n", MIN_NUM_THREADS, MIN_NUM_BLOCKS);
 
-<<<<<<< HEAD
-#endif
 
-
-=======
->>>>>>> 5dab4f8... Last commit in the 'ravil' branch
     // allocate constant data into the DEVICE
     CopyConstantsToDevice(parameters,
                           constants,
@@ -188,23 +113,10 @@ int main() {
     cudaDeviceSynchronize();
 #endif
 
-    /*    gnuplot_ctrl *velocity_frame;
-    gnuplot_ctrl *density_frame;
-
-    velocity_frame = gnuplot_init();
-    density_frame = gnuplot_init();
-
-    SetupGnuPlots(velocity_frame, density_frame, parameters);
-    */
-    // allocate memory in the HOST
+    // allocate memory on the HOST
     int *flag_field = (int*)calloc(parameters.num_lattices, sizeof(int));
-    real *density = (real*)calloc(parameters.num_lattices, sizeof(real));
-    real *velocity_magnitude = (real*)calloc(parameters.num_lattices, sizeof(real));
+    ReadMeshFile(arguments.mesh_file, flag_field, parameters);
 
-    InitFlagFieldStub(flag_field,
-                      grid_file,
-                      parameters);
-    
     // allocate and init DOMAIN on the DEVICE
     DomainHandler domain_handler;
     domain_handler.InitDomainOnDevice(parameters,
@@ -236,20 +148,20 @@ int main() {
     // Create window 
     GLFWwindow* window = glfwCreateWindow (SCR_WIDTH, SCR_HEIGHT, "Lattice Boltzmann", NULL, NULL);
 
-    if (window == NULL )
-      {
-        std::cout << "Failed to create window." << std::endl; 
+    if (window == NULL) {
+        std::cout << "ERROR: failed to create window." << std::endl; 
         glfwTerminate();
-        return -1; 
-      }
+        exit(EXIT_FAILURE); 
+    }
 
     // Bind object to context
     glfwMakeContextCurrent(window);
 
-    if ( glewInit() != GLEW_OK )
-      {
-        std::cout << "FAILED TO INITIALIZE GLEW" << std::endl; 
-      }
+    if (glewInit() != GLEW_OK) {
+        std::cout << "ERROR: failed to initialize glew" << std::endl; 
+        exit(EXIT_FAILURE);
+    }
+    
     // first two paramters set location of left corner, other two are width and height	
     glViewport(0,0, SCR_WIDTH, SCR_HEIGHT);
 	
@@ -262,7 +174,6 @@ int main() {
     glBufferData(GL_PIXEL_UNPACK_BUFFER_ARB, parameters.num_lattices * 4, NULL, GL_DYNAMIC_DRAW_ARB);
 
     // register buffer with cuda runtime
-
     cudaGraphicsGLRegisterBuffer (&resource, buffer_object, cudaGraphicsMapFlagsNone);
 
     // uchar4 is defined by cuda
@@ -270,6 +181,10 @@ int main() {
     size_t size; 
 
 #endif
+
+    cublasHandle_t handle;
+    HANDLE_CUBLAS_ERROR(cublasCreate(&handle));
+
     cudaEvent_t start, stop;
     cudaEventCreate(&start);
     cudaEventCreate(&stop);
@@ -363,43 +278,36 @@ int main() {
 #ifdef DEBUG
 
 
-
         if ((time % parameters.steps_per_report) == 0) {
-          /*
-            HANDLE_ERROR(cudaMemcpy(density,
-                                    domain->dev_density,
-                                    parameters.num_lattices * sizeof(real),
-                                    cudaMemcpyDeviceToHost));
-         
-            real max_density = *std::max_element(density,
-                                    density + parameters.num_lattices);
-            real min_density = *std::min_element(density,
-                                density + parameters.num_lattices);
-          */
+          
+            int max_index = 0;
+            int min_index = 0;
+            HANDLE_CUBLAS_ERROR(cublasIdamax(handle,
+                                             parameters.num_lattices,
+                                             domain->dev_density,
+                                             1,
+                                             &max_index));
 
-          int max_index, min_index;
-          stat = cublasIdamax (handle, parameters.num_lattices, domain->dev_density, 1, &max_index );
-          if (stat != CUBLAS_STATUS_SUCCESS)
-            {
-              std::cerr << "Finding max density failed" << std::endl;  
-            }
-          stat = cublasIdamin (handle, parameters.num_lattices, domain->dev_density, 1, &min_index);
-          if (stat != CUBLAS_STATUS_SUCCESS)
-            {
-              std::cerr << "Finding max density failed" << std::endl;  
-            }
+            HANDLE_CUBLAS_ERROR(cublasIdamin(handle,
+                                             parameters.num_lattices,
+                                             domain->dev_density,
+                                             1,
+                                             &min_index));
 
+            real max_density = 0.0;
+            real min_density = 0.0;
 
-          real max_density = 40.00;
-          real min_density = 20.00;
+            // copy data from device to host to print using std::cout
+            HANDLE_ERROR(cudaMemcpy(&max_density,
+                         domain->dev_density + max_index - 1,
+                         sizeof(real),
+                         cudaMemcpyDeviceToHost));
 
-          // copy data from device to host to print using std::cout
-          HANDLE_ERROR (cudaMemcpy (&max_density, domain->dev_density + max_index - 1, sizeof(real), cudaMemcpyDeviceToHost ) );
+            HANDLE_ERROR(cudaMemcpy(&min_density,
+                         domain->dev_density + min_index - 1,
+                         sizeof(real),
+                         cudaMemcpyDeviceToHost));
 
-          HANDLE_ERROR( cudaMemcpy (&min_density, domain->dev_density + min_index - 1, sizeof(real), cudaMemcpyDeviceToHost) );
-
-
-          std::cout << "max and min indices are " << max_index << " " << min_index << std::endl;
             std::cout << "time step: " << time << "; ";
             std::cout << "max density: " << max_density << "; ";
             std::cout << "min density "  << min_density << std::endl;
@@ -408,17 +316,17 @@ int main() {
 
 #ifdef GRAPHICS
         
-        /*        if ((time % parameters.steps_per_report) == 0) {*/
-
           ComputeVelocityMagnitude<<<MAX_NUM_BLOCKS, MAX_NUM_THREADS>>>(domain->dev_velocity,
                                                                         domain->dev_velocity_magnitude);
 
-          cudaGraphicsMapResources (1, &resource, NULL);
-          cudaGraphicsResourceGetMappedPointer ( ( void ** ) &dev_ptr, &size, resource );
+          cudaGraphicsMapResources(1, &resource, NULL);
+          cudaGraphicsResourceGetMappedPointer((void**)&dev_ptr, &size, resource);
 
           processInput(window);
 
-          FloatToRGB<<<MAX_NUM_BLOCKS, MAX_NUM_THREADS>>> (dev_ptr, domain->dev_velocity_magnitude, domain->dev_flag_field);
+          FloatToRGB<<<MAX_NUM_BLOCKS, MAX_NUM_THREADS>>>(dev_ptr,
+                                                          domain->dev_velocity_magnitude,
+                                                          domain->dev_flag_field);
 
           // unmap resources to synchronize between rendering and cuda tasks 
           cudaGraphicsUnmapResources(1, &resource, NULL);
@@ -427,9 +335,6 @@ int main() {
           glfwSwapBuffers(window);
           glfwPollEvents();
         
- 
-
-          //        }
 #endif
     }
     // END of algorithm
@@ -446,15 +351,11 @@ int main() {
     printf("MLUPS: %4.6f\n", MLUPS);
 
     // free HOST recourses
-    //gnuplot_close(velocity_frame);
-    //gnuplot_close(density_frame);
-
     cudaGraphicsUnregisterResource(resource);
     glfwTerminate();
     cublasDestroy(handle);
+    
     // free DEVICE resources
     free(flag_field);
-    free(density);
-    free(velocity_magnitude);
     return 0;
 }

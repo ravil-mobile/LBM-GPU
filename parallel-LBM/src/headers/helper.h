@@ -1,6 +1,5 @@
 #include <string>
 #include "parameters.h"
-#include "gnuplot_i.h"
 
 #include <stdio.h>
 #ifndef SEQUENTIAL_LBM_SRC_HEADERS_HELPER_H_
@@ -8,15 +7,28 @@
 
 int GetIndex(int index_i, int index_j, const int width);
 
-void SetupGnuPlots(gnuplot_ctrl *velocity_frame,
-                   gnuplot_ctrl *density_frame,
-                   const struct SimulationParametes &parameters);
+struct Arguments {
+    char *parameters_file;
+    char *boundary_cond_file;
+    char *mesh_file;
+    char *threads_distr_file;
+};
 
-void DisplayResults(real *velocity,
-                    gnuplot_ctrl *velocity_frame,
-                    const struct SimulationParametes &parameters,
-                    real *density = 0, 
-                    gnuplot_ctrl *density_frame = 0);
+int parse_opt(int key, char *arg, struct argp_state *state);
+
+bool isSpace (const std::string& str);
+
+bool predicate (const std::string& line);
+
+void ReadParameterFile(const char *parameter_file,
+                       struct SimulationParametes &parameters);
+
+void ReadBoundaryFile(const char *boundary_file,
+                      struct BoundaryInfo &boundary_info);
+
+void ReadMeshFile(const char *mesh_file,
+                  int *flag_field,
+                  struct SimulationParametes &parameters);
 
 template<typename T>
 void PrintArray(T *array, int size) {
