@@ -9,6 +9,11 @@ void ChooseGPU() {
     int max_compute_capability = 0;
 
     HANDLE_ERROR(cudaGetDeviceCount(&gpu_count));
+    if (gpu_count == 0) {
+        printf("ERROR: no gpu has been detected on your system\n");
+        exit(EXIT_FAILURE);
+    }
+    
     printf("number of gpu devices detected: %d\n\n", gpu_count);
 
     for (int gpu_instance = 0; gpu_instance < gpu_count; ++gpu_instance) {

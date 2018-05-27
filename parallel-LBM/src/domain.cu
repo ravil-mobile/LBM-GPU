@@ -3,6 +3,7 @@
 #include "headers/domain.h"
 #include "headers/parameters.h"
 #include "headers/kernels.h"
+#include "headers/helper.h"
 
 DomainHandler::DomainHandler() {
     dev_domain.dev_flag_field = 0; 
@@ -40,9 +41,7 @@ DomainHandler::~DomainHandler() {
 }
 
 void DomainHandler::InitDomainOnDevice(SimulationParametes &parameters,
-                                       int *flag_field,
-                                       int num_threads,
-                                       int num_blocks) {
+                                       int *flag_field) {
 
     int size = parameters.num_lattices;
     int dimension = parameters.dimension;
@@ -54,9 +53,7 @@ void DomainHandler::InitDomainOnDevice(SimulationParametes &parameters,
     HANDLE_ERROR(cudaMalloc(&(dev_domain.dev_velocity), dimension * size * sizeof(real)));
     HANDLE_ERROR(cudaMalloc(&(dev_domain.dev_velocity_magnitude), size * sizeof(real)));
     HANDLE_ERROR(cudaMalloc(&(dev_domain.dev_population), discretization * size * sizeof(real)));
-    HANDLE_ERROR(cudaMalloc(&(dev_domain.dev_swap_buffer), discretization * size * sizeof(real)));   
-
-
+    HANDLE_ERROR(cudaMalloc(&(dev_domain.dev_swap_buffer), discretization * size * sizeof(real)));
 
     // init memory in the DEVICE
     HANDLE_ERROR(cudaMemcpy(dev_domain.dev_flag_field,
@@ -65,6 +62,9 @@ void DomainHandler::InitDomainOnDevice(SimulationParametes &parameters,
                             cudaMemcpyHostToDevice));
 
     double init_value = 1.0;
+
+    const int num_threads = 192;
+    int num_blocks = ComputeNumBlocks(num_threads, size);
     InitArrayDevice<<<num_blocks, num_threads>>>(dev_domain.dev_density,
                                                  init_value,
                                                  size); 

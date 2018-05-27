@@ -12,6 +12,7 @@
 
 #include "headers/parameters.h"
 #include "headers/helper.h"
+#include "headers/boundary_conditions.h"
 
 int GetIndex(int index_i,
              int index_j,
@@ -331,7 +332,7 @@ void ReadMeshFile(const char *mesh_file,
     }
 
     else {
-        std::cout << "ERROR: file mesh with hasn't been provided" << std::endl;
+        std::cout << "ERROR: mesh file hasn't been provided" << std::endl;
         exit(EXIT_FAILURE);
     }
 
@@ -385,6 +386,151 @@ void ReadMeshFile(const char *mesh_file,
         std::copy(flag_line.begin(), flag_line.end(), flag_field + count * flag_line.size());
         count += 1;
     }
+}
+
+void ReadThreadsDistrFile(char *threads_distr_file,
+                          struct CudaResourceDistr &threads_distr) {
+    /*
+    Example of a file:
+    
+        ############################################################################
+        # HEADER: the file desctibes theads distriburion per block for each kernel #
+        ############################################################################
+     
+        =
+        stream_device                   192
+        update_density_field_device     192
+        update_velocity_field_device    192
+        update_population_field_device  192
+
+        treat_non_slip_bc               192
+        treat_slip_bc                   192
+        treat_inflow_bc                 192
+        treat_outflow_bc                192
+
+        compute_velocity_magnitude      192
+        float_to_rgb                    192
+    */
+    std::ifstream input_file;
+    if (threads_distr_file != NULL) {
+        input_file.open(threads_distr_file);
+    }
+
+    else {
+        std::cout << "ERROR: thread distribution file hasn't been provided" << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
+    if (!input_file) {
+        std::cout << "ERROR: file [" << threads_distr_file << "] could not be opened" << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
+    std::string input;
+    std::vector<std::string> lines;
+
+    // read file into vector
+    while(std::getline(input_file, input)) {
+        lines.push_back(input);
+    }
+
+    input_file.close();
+    // Trim lines
+    std::vector<std::string>::iterator end = std::remove_if(lines.begin(), lines.end(), predicate);
+    
+    // Process file to extract data
+    std::map<std::string, int> intMap;
+    
+    // initilize maps
+    // initilize maps                                                                                      
+    const int DEFAULT_VALUE = 0;                                                                        
+
+    intMap["stream_device"] = DEFAULT_VALUE;                                                              
+    intMap["update_density_field_device"] = DEFAULT_VALUE;
+    intMap["update_velocity_field_device"] = DEFAULT_VALUE;
+    intMap["update_population_field_device"] = DEFAULT_VALUE;
+    intMap["treat_non_slip_bc"] = DEFAULT_VALUE;    
+    intMap["treat_slip_bc"] = DEFAULT_VALUE;         
+    intMap["treat_inflow_bc"] = DEFAULT_VALUE;        
+    intMap["treat_outflow_bc"] = DEFAULT_VALUE;
+    intMap["compute_velocity_magnitude"] = DEFAULT_VALUE;  
+    intMap["float_to_rgb"] = DEFAULT_VALUE; 
+
+    // populate data
+    for (std::vector<std::string>::iterator i = lines.begin(); i != end; i++) {
+        std::map<std::string, int>::iterator doubleIt;
+        std::stringstream stream (*i);
+        std::string key;
+        int value;
+
+        stream >> key >> value;
+        if ((doubleIt = intMap.find(key)) != intMap.end()) {
+            doubleIt->second = value;
+        }
+
+    }
+    
+    for (std::map<std::string, int>::iterator it = intMap.begin();
+         it != intMap.end();
+         ++it) {
+        if (it->second == DEFAULT_VALUE) {
+            PrintErrorMessage(it->first);
+            exit(EXIT_FAILURE);
+        }    
+    }
+
+    threads_distr.stream_device = intMap["stream_device"];
+    threads_distr.update_density_field_device = intMap["update_density_field_device"];
+    threads_distr.update_velocity_field_device = intMap["update_velocity_field_device"];
+    threads_distr.update_population_field_device = intMap["update_population_field_device"];
+
+    threads_distr.treat_non_slip_bc = intMap["treat_non_slip_bc"];
+    threads_distr.treat_slip_bc = intMap["treat_slip_bc"];
+    threads_distr.treat_inflow_bc = intMap["treat_inflow_bc"];
+    threads_distr.treat_outflow_bc = intMap["treat_outflow_bc"];
+
+    threads_distr.compute_velocity_magnitude = intMap["compute_velocity_magnitude"];
+    threads_distr.float_to_rgb = intMap["float_to_rgb"];
+}
+
+int ComputeNumBlocks(const int num_threads, const int num_elements) {
+    return (num_elements + num_threads) / num_threads;
+}
+
+void ComputeBlcoksDistr(struct CudaResourceDistr &blocks,
+                        const struct CudaResourceDistr &threads,
+                        const struct SimulationParametes &parameters,
+                        const struct BoundaryConditions *boudnaries) {
+
+    blocks.stream_device = ComputeNumBlocks(threads.stream_device,
+                                            parameters.num_lattices);
+
+    blocks.update_density_field_device = ComputeNumBlocks(threads.update_density_field_device,
+                                                          parameters.num_lattices);
+
+    blocks.update_velocity_field_device = ComputeNumBlocks(threads.update_velocity_field_device,
+                                                           parameters.num_lattices);
+
+    blocks.update_population_field_device = ComputeNumBlocks(threads.update_population_field_device,
+                                                             parameters.num_lattices);
+
+    blocks.treat_non_slip_bc = ComputeNumBlocks(threads.treat_non_slip_bc,
+                                                boudnaries->num_wall_elements);
+
+    blocks.treat_slip_bc = ComputeNumBlocks(threads.treat_slip_bc,
+                                            boudnaries->num_moving_wall_elements);
+
+    blocks.treat_inflow_bc = ComputeNumBlocks(threads.treat_inflow_bc,
+                                              boudnaries->num_inflow_elements);
+
+    blocks.treat_outflow_bc = ComputeNumBlocks(threads.treat_outflow_bc,
+                                               boudnaries->num_outflow_elements);
+
+    blocks.compute_velocity_magnitude = ComputeNumBlocks(threads.compute_velocity_magnitude,
+                                                         parameters.num_lattices);
+
+    blocks.float_to_rgb = ComputeNumBlocks(threads.float_to_rgb,
+                                           parameters.num_lattices);
 }
 
 

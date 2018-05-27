@@ -1,9 +1,9 @@
-#ifdef GRAPHICS
-#define GLEW_STATIC
+//#ifdef GRAPHICS
+//#define GLEW_STATIC
     #include<GL/glew.h>
     #include<GLFW/glfw3.h>
     #include<cuda_gl_interop.h>
-#endif
+//#endif
 
 #include "cublas_v2.h"
 #include <cuda_runtime.h>
@@ -50,6 +50,7 @@ cudaGraphicsResource * resource;
 
 int main(int argc, char **argv) {
 
+    // read input arguments
     static struct argp_option options[] = {
         {"parameters",  'p', "FILE", 0, "Sets path to a parameter file"},
         {"boundary-cond", 'b', "FILE", 0, "Sets path to a boundary conditions file"},
@@ -72,8 +73,6 @@ int main(int argc, char **argv) {
 
 
     ChooseGPU();
-    int max_num_threads_per_block = 192;
-    int max_num_registers_per_block = 35;
        
     // read input data
     struct SimulationParametes parameters;
@@ -86,20 +85,6 @@ int main(int argc, char **argv) {
 
     struct BoundaryInfo boundary_info;
     ReadBoundaryFile(arguments.boundary_cond_file, boundary_info);
-
-    // define cuda grid parameters
-    const int MAX_NUM_THREADS = max_num_threads_per_block;
-    const int MAX_NUM_BLOCKS = (parameters.num_lattices + MAX_NUM_THREADS) / MAX_NUM_THREADS;
-
-    const int MAX_NUM_USED_REGISTERS_PER_WARP = 35;
-    int min_num_threads_estimation = max_num_registers_per_block / MAX_NUM_USED_REGISTERS_PER_WARP;
-    const int MIN_NUM_THREADS = min (min_num_threads_estimation, MAX_NUM_THREADS);
-    const int MIN_NUM_BLOCKS = (parameters.num_lattices + MIN_NUM_THREADS) / MIN_NUM_THREADS;
-
-    printf(" --- num elements: %d --- \n", parameters.num_lattices);
-    printf(" --- max #threads %d: max #blocks: %d --- \n", MAX_NUM_THREADS, MAX_NUM_BLOCKS);
-    printf(" --- min #threads %d: min #blocks: %d --- \n", MIN_NUM_THREADS, MIN_NUM_BLOCKS);
-
 
     // allocate constant data into the DEVICE
     CopyConstantsToDevice(parameters,
@@ -120,9 +105,7 @@ int main(int argc, char **argv) {
     // allocate and init DOMAIN on the DEVICE
     DomainHandler domain_handler;
     domain_handler.InitDomainOnDevice(parameters,
-                                      flag_field,
-                                      MAX_NUM_THREADS,
-                                      MAX_NUM_BLOCKS);
+                                      flag_field);
 
     const Domain *domain = domain_handler.GetDeviceData();
 
@@ -137,6 +120,12 @@ int main(int argc, char **argv) {
 
     const BoundaryConditions *boundaries = bc_handler.GetDeviceData();
 
+    CudaResourceDistr threads_distr;
+    ReadThreadsDistrFile(arguments.threads_distr_file, threads_distr);
+
+    CudaResourceDistr blocks_distr;
+    ComputeBlcoksDistr(blocks_distr, threads_distr, parameters, boundaries); 
+    
     int threads = 0;
     int blocks = 0;
 
@@ -174,12 +163,11 @@ int main(int argc, char **argv) {
     glBufferData(GL_PIXEL_UNPACK_BUFFER_ARB, parameters.num_lattices * 4, NULL, GL_DYNAMIC_DRAW_ARB);
 
     // register buffer with cuda runtime
-    cudaGraphicsGLRegisterBuffer (&resource, buffer_object, cudaGraphicsMapFlagsNone);
+    cudaGraphicsGLRegisterBuffer(&resource, buffer_object, cudaGraphicsMapFlagsNone);
 
     // uchar4 is defined by cuda
     uchar4* dev_ptr;
     size_t size; 
-
 #endif
 
     cublasHandle_t handle;
@@ -191,18 +179,20 @@ int main(int argc, char **argv) {
 
     // START of algorighm
     cudaEventRecord(start, 0);
-    for (int time = 0; (time < parameters.num_time_steps) && (!glfwWindowShouldClose(window)); ++time) {
+    for (int time = 0; (time < parameters.num_time_steps); ++time) {
         
-        // perform streaming step 
-        StreamDevice<<<MAX_NUM_BLOCKS, MAX_NUM_THREADS>>>(domain->dev_population,
-                                                          domain->dev_swap_buffer,
-                                                          domain->dev_flag_field);
+        // perform streaming step
+        threads = threads_distr.stream_device;
+        blocks = blocks_distr.stream_device;
+        StreamDevice<<<blocks, threads>>>(domain->dev_population,
+                                          domain->dev_swap_buffer,
+                                          domain->dev_flag_field);
         CUDA_CHECK_ERROR(); 
         
         // apply boundary consitions
         if (boundaries->num_wall_elements != 0) {
-            threads = min(boundaries->num_wall_elements, MAX_NUM_THREADS);
-            blocks = (parameters.num_lattices + threads) / threads;
+            threads = threads_distr.treat_non_slip_bc;
+            blocks = blocks_distr.treat_non_slip_bc;
             TreatNonSlipBC<<<blocks, threads>>>(boundaries->bc_wall_indices,
                                                 domain->dev_swap_buffer,
                                                 boundaries->num_wall_elements); 
@@ -210,8 +200,8 @@ int main(int argc, char **argv) {
         }
 
         if (boundaries->num_moving_wall_elements != 0) {
-            threads = min(boundaries->num_moving_wall_elements, MAX_NUM_THREADS);
-            blocks = (parameters.num_lattices + threads) / threads;
+            threads = threads_distr.treat_slip_bc;
+            blocks = blocks_distr.treat_slip_bc;
             TreatSlipBC<<<blocks, threads>>>(boundaries->bc_moving_wall_indices,
                                          boundaries->bc_moving_wall_data,
                                          domain->dev_density,
@@ -221,8 +211,8 @@ int main(int argc, char **argv) {
         }
 
         if (boundaries->num_inflow_elements != 0) {
-            threads = min(boundaries->num_inflow_elements, MAX_NUM_THREADS);
-            blocks = (parameters.num_lattices + threads) / threads;
+            threads = threads_distr.treat_inflow_bc;
+            blocks = blocks_distr.treat_inflow_bc;
             TreatInflowBC<<<blocks, threads>>>(boundaries->bc_inflow_indices,
                                                boundaries->bc_inflow_data,
                                                domain->dev_density,
@@ -232,8 +222,8 @@ int main(int argc, char **argv) {
         }
 
         if (boundaries->num_outflow_elements != 0) {
-            threads = min(boundaries->num_outflow_elements, MAX_NUM_THREADS);
-            blocks = (parameters.num_lattices + threads) / threads;
+            threads = threads_distr.treat_outflow_bc;
+            blocks = blocks_distr.treat_outflow_bc;
             TreatOutflowBC<<<blocks, threads>>>(boundaries->bc_outflow_indices,
                                                 domain->dev_velocity,
                                                 domain->dev_density,
@@ -246,29 +236,26 @@ int main(int argc, char **argv) {
         HANDLE_ERROR(cudaDeviceSynchronize());
         domain_handler.SwapPopulationFields(); 
        
-        // perform collision step 
-        UpdateDensityFieldDevice<<<MAX_NUM_BLOCKS, MAX_NUM_THREADS>>>(domain->dev_density,
-                                                                      domain->dev_population,
-                                                                      domain->dev_flag_field);
+        // perform collision step
+        threads = threads_distr.update_density_field_device;
+        blocks = blocks_distr.update_density_field_device;
+        UpdateDensityFieldDevice<<<blocks, threads>>>(domain->dev_density,
+                                                      domain->dev_population,
+                                                      domain->dev_flag_field);
 
         CUDA_CHECK_ERROR(); 
 
-
-        UpdateVelocityFieldDevice<<<MAX_NUM_BLOCKS, MAX_NUM_THREADS>>>(domain->dev_velocity,
-                                                                       domain->dev_population,
-                                                                       domain->dev_density,
-                                                                       domain->dev_flag_field);
+        threads = threads_distr.update_velocity_field_device;
+        blocks = blocks_distr.update_velocity_field_device;
+        UpdateVelocityFieldDevice<<<blocks, threads>>>(domain->dev_velocity,
+                                                       domain->dev_population,
+                                                       domain->dev_density,
+                                                       domain->dev_flag_field);
         CUDA_CHECK_ERROR(); 
-
-        /* 
-        UpdatePopulationFieldDevice<<<MIN_NUM_BLOCKS, MIN_NUM_THREADS>>>(domain->dev_velocity,
-                                                                         domain->dev_population,
-                                                                         domain->dev_density);
-        CUDA_CHECK_ERROR(); 
-        */
         
-        threads = 192;
-        blocks = (parameters.num_lattices + threads) / threads; 
+        
+        threads = threads_distr.update_population_field_device;
+        blocks = blocks_distr.update_population_field_device;
         UpdatePopulationFieldDevice<<<blocks, threads>>>(domain->dev_velocity,
                                                          domain->dev_population,
                                                          domain->dev_density);
@@ -315,18 +302,21 @@ int main(int argc, char **argv) {
 #endif
 
 #ifdef GRAPHICS
-        
-          ComputeVelocityMagnitude<<<MAX_NUM_BLOCKS, MAX_NUM_THREADS>>>(domain->dev_velocity,
-                                                                        domain->dev_velocity_magnitude);
+            threads = threads_distr.compute_velocity_magnitude;
+            blocks = blocks_distr.compute_velocity_magnitude;
+            ComputeVelocityMagnitude<<<blocks, threads>>>(domain->dev_velocity,
+                                                          domain->dev_velocity_magnitude);
 
-          cudaGraphicsMapResources(1, &resource, NULL);
-          cudaGraphicsResourceGetMappedPointer((void**)&dev_ptr, &size, resource);
+            cudaGraphicsMapResources(1, &resource, NULL);
+            cudaGraphicsResourceGetMappedPointer((void**)&dev_ptr, &size, resource);
 
-          processInput(window);
-
-          FloatToRGB<<<MAX_NUM_BLOCKS, MAX_NUM_THREADS>>>(dev_ptr,
-                                                          domain->dev_velocity_magnitude,
-                                                          domain->dev_flag_field);
+            processInput(window);
+            
+            threads = threads_distr.float_to_rgb;
+            blocks = blocks_distr.float_to_rgb;
+            FloatToRGB<<<blocks, threads>>>(dev_ptr,
+                                            domain->dev_velocity_magnitude,
+                                            domain->dev_flag_field);
 
           // unmap resources to synchronize between rendering and cuda tasks 
           cudaGraphicsUnmapResources(1, &resource, NULL);
@@ -336,6 +326,7 @@ int main(int argc, char **argv) {
           glfwPollEvents();
         
 #endif
+    
     }
     // END of algorithm
     cudaEventRecord(stop, 0);

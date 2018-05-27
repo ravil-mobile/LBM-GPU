@@ -1,6 +1,6 @@
 #include <string>
 #include "parameters.h"
-
+#include "boundary_conditions.h"
 #include <stdio.h>
 #ifndef SEQUENTIAL_LBM_SRC_HEADERS_HELPER_H_
 #define SEQUENTIAL_LBM_SRC_HEADERS_HELPER_H_
@@ -12,6 +12,19 @@ struct Arguments {
     char *boundary_cond_file;
     char *mesh_file;
     char *threads_distr_file;
+};
+
+struct CudaResourceDistr {
+    int stream_device;
+    int update_density_field_device;
+    int update_velocity_field_device;
+    int update_population_field_device;
+    int treat_non_slip_bc;
+    int treat_slip_bc;
+    int treat_inflow_bc;
+    int treat_outflow_bc;
+    int compute_velocity_magnitude;
+    int float_to_rgb;
 };
 
 int parse_opt(int key, char *arg, struct argp_state *state);
@@ -29,6 +42,16 @@ void ReadBoundaryFile(const char *boundary_file,
 void ReadMeshFile(const char *mesh_file,
                   int *flag_field,
                   struct SimulationParametes &parameters);
+
+void ReadThreadsDistrFile(char *threads_distr_file,
+                          struct CudaResourceDistr &threads_distr);
+
+int ComputeNumBlocks(const int num_threads, const int num_elements);
+
+void ComputeBlcoksDistr(struct CudaResourceDistr &blocks,
+                        const struct CudaResourceDistr &threads,
+                        const struct SimulationParametes &parameters,
+                        const struct BoundaryConditions *boudnaries);
 
 template<typename T>
 void PrintArray(T *array, int size) {

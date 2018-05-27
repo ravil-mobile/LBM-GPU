@@ -19,9 +19,7 @@ public:
     ~DomainHandler();
     
     void InitDomainOnDevice(SimulationParametes &parameters,
-                            int *flag_field,
-                            int num_threads,
-                            int num_blocks);
+                            int *flag_field);
     
     void SwapPopulationFields();
     const Domain * GetDeviceData();

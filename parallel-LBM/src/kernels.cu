@@ -355,21 +355,19 @@ __global__ void ComputeVelocityMagnitude(real *velocity,
 }
 
 
-__global__ void FloatToRGB( uchar4 *ptr, real* velocity_magnitude, int* flag_field )
-{
-  // map from threadIdx/BlockIdx to pixel position
-  int index = threadIdx.x + blockIdx.x * blockDim.x;
-  int stride = blockDim.x * gridDim.x;
+__global__ void FloatToRGB( uchar4 *ptr, real* velocity_magnitude, int* flag_field ) {
+    // map from threadIdx/BlockIdx to pixel position
+    int index = threadIdx.x + blockIdx.x * blockDim.x;
+    int stride = blockDim.x * gridDim.x;
 
-  for (int i = index; i < parameters_device.num_lattices; i += stride )
-    {
-      if ( flag_field[index] == WALL )
-        {
+    for (int i = index; i < parameters_device.num_lattices; i += stride ) {
+        if ( flag_field[index] == WALL ) {
           ptr[index].x = 0;
           ptr[index].y = 0;
           ptr[index].z = 0;
           ptr[index].w = 255;
         }
+
       else {
         real velocity = velocity_magnitude[index]; 
 
