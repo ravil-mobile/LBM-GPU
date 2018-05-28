@@ -115,14 +115,14 @@ __global__ void UpdateDensityFieldDevice(real *density,
                                          real *population,
                                          int *flag_field) {
     int num_lattices = parameters_device.num_lattices;
-    int num_directions = parameters_device.discretization; 
+    short int num_directions = parameters_device.discretization; 
     
     int thread_id = threadIdx.x + blockIdx.x * blockDim.x;
     
     while (thread_id < num_lattices) {
         if (flag_field[thread_id] == FLUID) {
             real lattice_density = 0.0;
-            for (int component = 0; component < num_directions; ++component) {
+            for (short int component = 0; component < num_directions; ++component) {
                 lattice_density += population[component * num_lattices + thread_id];
             }
             density[thread_id] = lattice_density;
@@ -136,7 +136,7 @@ __global__ void UpdateVelocityFieldDevice(real *velocity,
                                           real *density,
                                           int *flag_field) {
     int num_lattices = parameters_device.num_lattices;
-    int num_directions = parameters_device.discretization; 
+    short int num_directions = parameters_device.discretization; 
     
     int thread_id = threadIdx.x + blockIdx.x * blockDim.x;
     
@@ -145,7 +145,7 @@ __global__ void UpdateVelocityFieldDevice(real *velocity,
             real lattice_velocity_x = 0.0;
             real lattice_velocity_y = 0.0;
             
-            for (int component = 0; component < num_directions; ++component) {
+            for (short int component = 0; component < num_directions; ++component) {
                 real distribution = population[component * num_lattices + thread_id];
                 lattice_velocity_x += coords_device[component] * distribution;
                 lattice_velocity_y += coords_device[num_directions + component] * distribution;
@@ -189,7 +189,7 @@ __global__ void UpdatePopulationFieldDevice(real *velocity,
             real dot_product_cu = coords_device[component] * local_velocity_x
                                 + coords_device[num_directions + component] * local_velocity_y;
             */
-            
+        
             real velocity_expansion = (const_one * dot_product_cu)
                                     + (const_two * dot_product_cu * dot_product_cu)
                                     - (const_three * dot_product_uu)

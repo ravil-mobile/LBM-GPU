@@ -130,7 +130,6 @@ int main(int argc, char **argv) {
     int blocks = 0;
 
 #ifdef GRAPHICS
-
     // set OpenGL device
     glfwInit();
 
@@ -263,10 +262,7 @@ int main(int argc, char **argv) {
         CUDA_CHECK_ERROR();
 
 #ifdef DEBUG
-
-
         if ((time % parameters.steps_per_report) == 0) {
-          
             int max_index = 0;
             int min_index = 0;
             HANDLE_CUBLAS_ERROR(cublasIdamax(handle,
@@ -323,8 +319,7 @@ int main(int argc, char **argv) {
 
           glDrawPixels(parameters.width, parameters.height, GL_RGBA, GL_UNSIGNED_BYTE, 0 );
           glfwSwapBuffers(window);
-          glfwPollEvents();
-        
+          glfwPollEvents(); 
 #endif
     
     }
