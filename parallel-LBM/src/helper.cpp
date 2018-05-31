@@ -55,10 +55,10 @@ int parse_opt(int key, char *arg, struct argp_state *state) {
 
             if (counter < 4) {
                 printf("ERROR: please, read --usage or --help to get more information\n");
-                //argp_failure (state, 1, 0, "too few arguments");
+                argp_failure (state, 1, 0, "too few arguments");
             } else if (counter < 4) {
                 printf("ERROR: please, read --usage or --help to get more information\n");
-                //argp_failure (state, 1, 0, "too many arguments");
+                argp_failure (state, 1, 0, "too many arguments");
             }
             break;
     }
@@ -162,6 +162,7 @@ void ReadParameterFile(const char* parameter_file,
     intMap["width"] = DEFAULT_VALUE;
     intMap["height"] = DEFAULT_VALUE;
     intMap["steps_per_report"] = DEFAULT_VALUE;
+    intMap["brush_size"] = DEFAULT_VALUE;
 
     doubleMap["delta_x"] = DEFAULT_VALUE;
     doubleMap["delta_t"] = DEFAULT_VALUE;
@@ -211,6 +212,7 @@ void ReadParameterFile(const char* parameter_file,
     parameters.width = intMap["width"];
     parameters.height = intMap["height"];
     parameters.steps_per_report = intMap["steps_per_report"];
+    parameters.brush_size = intMap["brush_size"];
 
     parameters.delta_x = doubleMap["delta_x"];
     parameters.delta_t = doubleMap["delta_t"];
@@ -220,7 +222,6 @@ void ReadParameterFile(const char* parameter_file,
     parameters.min_velocity_rendering = doubleMap["min_velocity_rendering"];
 
     // Initialize the rest of the struct
-
     parameters.simulation_time = 1.0;
     parameters.dimension = 2;
     parameters.discretization = 9;

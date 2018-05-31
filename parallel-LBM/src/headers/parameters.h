@@ -1,7 +1,7 @@
 #ifndef SEQUENTIAL_LBM_SRC_HEADERS_PARAMETERS_H_
 #define SEQUENTIAL_LBM_SRC_HEADERS_PARAMETERS_H_
 
-typedef float real;
+typedef double real;
 
 struct SimulationParametes {
     real simulation_time;
@@ -18,9 +18,9 @@ struct SimulationParametes {
     int height;
     int num_lattices;
     int steps_per_report;
-  real max_velocity_rendering;
-  real min_velocity_rendering;
-
+    real max_velocity_rendering;
+    real min_velocity_rendering;
+    int brush_size;
 };
 //extern struct SimulationParametes parameters;
 

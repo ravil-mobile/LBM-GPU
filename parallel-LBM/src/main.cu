@@ -113,6 +113,7 @@ int main(int argc, char **argv) {
     BoundaryConditionsHandler bc_handler;
     
     ScanFlagField(flag_field,
+                  domain_handler,
                   bc_handler,
                   parameters,
                   constants,
@@ -126,6 +127,7 @@ int main(int argc, char **argv) {
     CudaResourceDistr blocks_distr;
     ComputeBlcoksDistr(blocks_distr, threads_distr, parameters, boundaries); 
     
+    const int DEFAULT_THREAD_NUM = 128; 
     int threads = 0;
     int blocks = 0;
 
@@ -169,9 +171,17 @@ int main(int argc, char **argv) {
     size_t size; 
 #endif
 
+    // prepare cublas
     cublasHandle_t handle;
     HANDLE_CUBLAS_ERROR(cublasCreate(&handle));
 
+    // prepare streams
+    const int NUM_STREAMS = 6;
+    cudaStream_t streams[NUM_STREAMS];
+    for (int i = 0; i < NUM_STREAMS; ++i)
+        cudaStreamCreate(&streams[i]);
+
+    // prepare timers
     cudaEvent_t start, stop;
     cudaEventCreate(&start);
     cudaEventCreate(&stop);
@@ -192,42 +202,42 @@ int main(int argc, char **argv) {
         if (boundaries->num_wall_elements != 0) {
             threads = threads_distr.treat_non_slip_bc;
             blocks = blocks_distr.treat_non_slip_bc;
-            TreatNonSlipBC<<<blocks, threads>>>(boundaries->bc_wall_indices,
-                                                domain->dev_swap_buffer,
-                                                boundaries->num_wall_elements); 
+            TreatNonSlipBC<<<blocks, threads, 0,streams[0]>>>(boundaries->bc_wall_indices,
+                                                              domain->dev_swap_buffer,
+                                                              boundaries->num_wall_elements); 
             CUDA_CHECK_ERROR();
         }
 
         if (boundaries->num_moving_wall_elements != 0) {
             threads = threads_distr.treat_slip_bc;
             blocks = blocks_distr.treat_slip_bc;
-            TreatSlipBC<<<blocks, threads>>>(boundaries->bc_moving_wall_indices,
-                                         boundaries->bc_moving_wall_data,
-                                         domain->dev_density,
-                                         domain->dev_swap_buffer,
-                                         boundaries->num_moving_wall_elements);
+            TreatSlipBC<<<blocks, threads, 0, streams[1]>>>(boundaries->bc_moving_wall_indices,
+                                                            boundaries->bc_moving_wall_data,
+                                                            domain->dev_density,
+                                                             domain->dev_swap_buffer,
+                                                             boundaries->num_moving_wall_elements);
             CUDA_CHECK_ERROR();
         }
 
         if (boundaries->num_inflow_elements != 0) {
             threads = threads_distr.treat_inflow_bc;
             blocks = blocks_distr.treat_inflow_bc;
-            TreatInflowBC<<<blocks, threads>>>(boundaries->bc_inflow_indices,
-                                               boundaries->bc_inflow_data,
-                                               domain->dev_density,
-                                               domain->dev_swap_buffer,
-                                               boundaries->num_inflow_elements);
+            TreatInflowBC<<<blocks, threads, 0, streams[2]>>>(boundaries->bc_inflow_indices,
+                                                              boundaries->bc_inflow_data,
+                                                              domain->dev_density,
+                                                              domain->dev_swap_buffer,
+                                                              boundaries->num_inflow_elements);
             CUDA_CHECK_ERROR();
         }
 
         if (boundaries->num_outflow_elements != 0) {
             threads = threads_distr.treat_outflow_bc;
             blocks = blocks_distr.treat_outflow_bc;
-            TreatOutflowBC<<<blocks, threads>>>(boundaries->bc_outflow_indices,
-                                                domain->dev_velocity,
-                                                domain->dev_density,
-                                                domain->dev_swap_buffer,
-                                                boundaries->num_outflow_elements);
+            TreatOutflowBC<<<blocks, threads, 0,streams[3]>>>(boundaries->bc_outflow_indices,
+                                                              domain->dev_velocity,
+                                                              domain->dev_density,
+                                                              domain->dev_swap_buffer,
+                                                              boundaries->num_outflow_elements);
             CUDA_CHECK_ERROR();
         }
 
@@ -277,23 +287,10 @@ int main(int argc, char **argv) {
                                              1,
                                              &min_index));
 
-            real max_density = 0.0;
-            real min_density = 0.0;
-
-            // copy data from device to host to print using std::cout
-            HANDLE_ERROR(cudaMemcpy(&max_density,
-                         domain->dev_density + max_index - 1,
-                         sizeof(real),
-                         cudaMemcpyDeviceToHost));
-
-            HANDLE_ERROR(cudaMemcpy(&min_density,
-                         domain->dev_density + min_index - 1,
-                         sizeof(real),
-                         cudaMemcpyDeviceToHost));
-
-            std::cout << "time step: " << time << "; ";
-            std::cout << "max density: " << max_density << "; ";
-            std::cout << "min density "  << min_density << std::endl;
+            PrintMaxMinDensity<<<1,1>>>(domain->dev_density,
+                                        max_index - 1,
+                                        min_index - 1,
+                                        time);
         }
 #endif
 
@@ -308,18 +305,29 @@ int main(int argc, char **argv) {
 
             processInput(window);
             
-            threads = threads_distr.float_to_rgb;
-            blocks = blocks_distr.float_to_rgb;
-            FloatToRGB<<<blocks, threads>>>(dev_ptr,
-                                            domain->dev_velocity_magnitude,
-                                            domain->dev_flag_field);
+            // draw fluid elements
+            threads = DEFAULT_THREAD_NUM;
+            blocks = ComputeNumBlocks(threads, domain->num_fluid_elements);
+            DrawFluid<<<blocks, threads, 0, streams[4]>>>(dev_ptr,
+                                                          domain->dev_velocity_magnitude,
+                                                          domain->dev_fluid_indices,
+                                                          domain->num_fluid_elements);
+            CUDA_CHECK_ERROR();
+            // draw solid elements
+            threads = DEFAULT_THREAD_NUM;
+            blocks = ComputeNumBlocks(threads, domain->num_solid_elements);
+            DrawObstacles<<<blocks, threads, 0, streams[5]>>>(dev_ptr,
+                                                              domain->dev_solid_indices,
+                                                              domain->num_solid_elements);
+            CUDA_CHECK_ERROR();
+            
+            SynchStreams<<<1,1>>>();
+            // unmap resources to synchronize between rendering and cuda tasks 
+            cudaGraphicsUnmapResources(1, &resource, NULL);
 
-          // unmap resources to synchronize between rendering and cuda tasks 
-          cudaGraphicsUnmapResources(1, &resource, NULL);
-
-          glDrawPixels(parameters.width, parameters.height, GL_RGBA, GL_UNSIGNED_BYTE, 0 );
-          glfwSwapBuffers(window);
-          glfwPollEvents(); 
+            glDrawPixels(parameters.width, parameters.height, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+            glfwSwapBuffers(window);
+            glfwPollEvents(); 
 #endif
     
     }
@@ -340,8 +348,10 @@ int main(int argc, char **argv) {
     cudaGraphicsUnregisterResource(resource);
     glfwTerminate();
     cublasDestroy(handle);
-    
-    // free DEVICE resources
     free(flag_field);
+
+    // delete streams 
+    for (int i = 0; i < NUM_STREAMS; ++i)\
+        cudaStreamDestroy(streams[i]);
     return 0;
 }
