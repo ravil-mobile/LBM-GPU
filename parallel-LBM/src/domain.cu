@@ -108,6 +108,9 @@ void DomainHandler::InitDomainOnDevice(SimulationParametes &parameters,
 }
 
 void DomainHandler::AllocateFluidElementIndices(std::vector<int> indices) {
+    if (dev_domain.dev_fluid_indices != NULL) {
+        HANDLE_ERROR( cudaFree (dev_domain.dev_fluid_indices));
+    }
     dev_domain.num_fluid_elements = indices.size();
     HANDLE_ERROR(cudaMalloc(&(dev_domain.dev_fluid_indices), indices.size() * sizeof(int)));
     HANDLE_ERROR(cudaMemcpy(dev_domain.dev_fluid_indices,
@@ -118,6 +121,9 @@ void DomainHandler::AllocateFluidElementIndices(std::vector<int> indices) {
 
 
 void DomainHandler::AllocateSolidElementIndices(std::vector<int> indices) {
+    if (dev_domain.dev_solid_indices != NULL) {
+        HANDLE_ERROR( cudaFree (dev_domain.dev_solid_indices));
+    }
     dev_domain.num_solid_elements = indices.size();
     HANDLE_ERROR(cudaMalloc(&(dev_domain.dev_solid_indices), indices.size() * sizeof(int)));
     HANDLE_ERROR(cudaMemcpy(dev_domain.dev_solid_indices,

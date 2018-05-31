@@ -34,9 +34,11 @@ const int SCR_WIDTH = 930;
 
 // store drawings on screen 
 std::vector<Point> draw_points;
+std::vector<Point> remove_points; 
 
 // HACK UPDATE FLAG FIELD 
-static bool update_flag_field = false; 
+static bool add_obstacle = false; 
+static bool remove_obstacle = false;
 
 // process key inputs to close window
 void processInput (GLFWwindow* window) {
@@ -58,25 +60,47 @@ void mouse_press_callback (GLFWwindow* window, int button, int action, int mods)
   if (button == GLFW_MOUSE_BUTTON_LEFT) {
     if ( action == GLFW_RELEASE ) {
       // call some function here
-      
+      /* 
       for (const Point& i: draw_points)
         {
           
           std::cout << "x ,y : " << i.x  << ", " << i.y << std::endl; 
-          }
+          }*/
       // HACK UPDATE FLAG FIELD
-      update_flag_field = true;
+      add_obstacle = true;
     }
   }
+
+  else if (button == GLFW_MOUSE_BUTTON_RIGHT) {
+      if ( action == GLFW_RELEASE ) {
+        // call some function here
+      
+        for (const Point& i: draw_points)
+          {
+          
+            std::cout << "x ,y : " << i.x  << ", " << i.y << std::endl; 
+          }
+        // HACK UPDATE FLAG FIELD
+        remove_obstacle = true;
+      }
+    }
 }
+
 
 void cursor_pos_callback ( GLFWwindow* window, double x, double y)
 {
   // store drag positions - check whether button is pressed or not 
-  int current_button_state = glfwGetMouseButton (window, GLFW_MOUSE_BUTTON_LEFT);
-  if ( current_button_state == GLFW_PRESS)
+  int current_left_button_state = glfwGetMouseButton (window, GLFW_MOUSE_BUTTON_LEFT);
+  int current_right_button_state = glfwGetMouseButton (window, GLFW_MOUSE_BUTTON_RIGHT);
+
+  if ( current_left_button_state == GLFW_PRESS)
     {
       draw_points.push_back ( Point (x,y) ); 
+    }
+
+  else if ( current_right_button_state == GLFW_PRESS)
+    {
+      remove_points.push_back ( Point (x,y ) ); 
     }
 }
 
@@ -337,7 +361,7 @@ int main(int argc, char **argv) {
 #ifdef GRAPHICS
         
         // HACK UPDATE FLAG FIELD
-        if (update_flag_field) {
+        if (add_obstacle || remove_obstacle) {
 
           int width = parameters.width;
           int height = parameters.height;
@@ -345,18 +369,53 @@ int main(int argc, char **argv) {
           for ( const Point& i: draw_points ) {
 
             // invert domain 
-            //int x = width - i.x;
             int y = height - i.y;
 
-            int index = GetIndex(i.x, y, width);
+            // Create a solid line
+            int center[] = {i.x, y};
+            int radius = parameters.brush_size;
 
-            flag_field [index] = WALL;
+            for (int j = (center[1] - radius); j < (center[1] + radius); ++j) {
+              for (int i = (center[0] - radius); i < (center[0] + radius); ++i) {
+                real delta_x = real(center[0] - i);
+                real delta_y = real(center[1] - j);
+                real distance = sqrt(delta_x * delta_x + delta_y * delta_y);
+                if (real(radius) > distance) {
+                  int index = GetIndex(i, j, width);
+                  if (add_obstacle) {
+                      flag_field[index] = WALL;
+                  }
+                  else {
+                      flag_field[index] = FLUID;
+                  }
+                }
+              }
+            }
+            //int index = GetIndex(i.x, y, width);
+
+            //flag_field [index] = WALL;
           }
-          std::cout << draw_points.size() << std::endl;
-          draw_points.clear();
+          //          std::cout << draw_points.size() << std::endl;
+
+          if ( add_obstacle ) {
+              draw_points.clear();
+              add_obstacle = false;
+          }
+          else {
+            remove_points.clear();
+            remove_obstacle = false;
+          }
+        
           domain_handler.UpdateFlagField(flag_field, parameters.num_lattices); 
-          update_flag_field = false;
-        }
+
+          ScanFlagField(flag_field,
+                        domain_handler,
+                        bc_handler,
+                        parameters,
+                        constants,
+                        boundary_info);
+
+          }
 
 
             processInput(window);
