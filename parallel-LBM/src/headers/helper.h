@@ -27,6 +27,16 @@ struct CudaResourceDistr {
     int float_to_rgb;
 };
 
+struct Point {
+    int x;
+    int y;
+
+    Point (int first, int second) {
+      x = first;
+      y = second; 
+    }
+};
+
 int parse_opt(int key, char *arg, struct argp_state *state);
 
 bool isSpace (const std::string& str);

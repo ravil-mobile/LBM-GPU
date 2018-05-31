@@ -3,10 +3,10 @@ cmake_minimum_required(VERSION 2.8)
 project(lbm)
 
 find_package(CUDA REQUIRED)
-
+set(CUDA_HOST_COMPILER /usr/bin/gcc-6)
 #set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS}; -O2; -std=c++11; -arch=sm_20; -Xptxas -v; --maxrregcount=32)
-set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS}; -O3; -std=c++11; -arch=sm_20; -Xptxas -v)
-#add_definitions(-DGRAPHICS)
+set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS}; -O3; -std=c++11; -arch=sm_50; -Xptxas -v)
+add_definitions(-DGRAPHICS)
 #add_definitions(-DGRAPHICS -DDEBUG)
 
 #add_definitions(-DDEBUG)
