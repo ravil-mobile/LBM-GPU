@@ -1,7 +1,7 @@
 #ifndef SEQUENTIAL_LBM_SRC_HEADERS_PARAMETERS_H_
 #define SEQUENTIAL_LBM_SRC_HEADERS_PARAMETERS_H_
 
-typedef double real;
+typedef float real;
 
 struct SimulationParametes {
     real simulation_time;
