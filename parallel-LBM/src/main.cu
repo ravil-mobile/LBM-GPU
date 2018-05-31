@@ -5,6 +5,7 @@
     #include<cuda_gl_interop.h>
 //#endif
 
+
 #include "cublas_v2.h"
 #include <cuda_runtime.h>
 
@@ -16,6 +17,7 @@
 #include <time.h>
 #include <iostream>
 #include <argp.h>
+#include <vector>
 
 #include "headers/parameters.h"
 #include "headers/scanning.h"
@@ -25,8 +27,16 @@
 #include "headers/domain.h"
 #include "headers/helper_cuda.h"
 
+#ifdef GRAPHICS
+
 const int SCR_HEIGHT = 630;
-const int SCR_WIDTH = 930; 
+const int SCR_WIDTH = 930;
+
+// store drawings on screen 
+std::vector<Point> draw_points;
+
+// HACK UPDATE FLAG FIELD 
+static bool update_flag_field = false; 
 
 // process key inputs to close window
 void processInput (GLFWwindow* window) {
@@ -42,11 +52,40 @@ void framebuffer_size_callback( GLFWwindow* window, int height, int width) {
 	glViewport(0,0, width, height);
 }
 
+void mouse_press_callback (GLFWwindow* window, int button, int action, int mods) {
+  // Use this function to launch other functions when the
+  // mouse button is released
+  if (button == GLFW_MOUSE_BUTTON_LEFT) {
+    if ( action == GLFW_RELEASE ) {
+      // call some function here
+      
+      for (const Point& i: draw_points)
+        {
+          
+          std::cout << "x ,y : " << i.x  << ", " << i.y << std::endl; 
+          }
+      // HACK UPDATE FLAG FIELD
+      update_flag_field = true;
+    }
+  }
+}
+
+void cursor_pos_callback ( GLFWwindow* window, double x, double y)
+{
+  // store drag positions - check whether button is pressed or not 
+  int current_button_state = glfwGetMouseButton (window, GLFW_MOUSE_BUTTON_LEFT);
+  if ( current_button_state == GLFW_PRESS)
+    {
+      draw_points.push_back ( Point (x,y) ); 
+    }
+}
+
 
 // global variables for cuda interop
 GLuint buffer_object;
 cudaGraphicsResource * resource;
 
+#endif
 
 int main(int argc, char **argv) {
 
@@ -157,7 +196,8 @@ int main(int argc, char **argv) {
 	
     // Register call back function with glfw
     glfwSetFramebufferSizeCallback( window, framebuffer_size_callback);
-
+    glfwSetMouseButtonCallback (window, mouse_press_callback);
+    glfwSetCursorPosCallback (window, cursor_pos_callback); 
     // create buffer object to hold pixel data
     glGenBuffers(1, &buffer_object);
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, buffer_object);
@@ -295,6 +335,32 @@ int main(int argc, char **argv) {
 #endif
 
 #ifdef GRAPHICS
+        
+        // HACK UPDATE FLAG FIELD
+        if (update_flag_field) {
+
+          int width = parameters.width;
+          int height = parameters.height;
+
+          for ( const Point& i: draw_points ) {
+
+            // invert domain 
+            //int x = width - i.x;
+            int y = height - i.y;
+
+            int index = GetIndex(i.x, y, width);
+
+            flag_field [index] = WALL;
+          }
+          std::cout << draw_points.size() << std::endl;
+          draw_points.clear();
+          domain_handler.UpdateFlagField(flag_field, parameters.num_lattices); 
+          update_flag_field = false;
+        }
+
+
+            processInput(window);
+
             threads = threads_distr.compute_velocity_magnitude;
             blocks = blocks_distr.compute_velocity_magnitude;
             ComputeVelocityMagnitude<<<blocks, threads>>>(domain->dev_velocity,
@@ -303,7 +369,6 @@ int main(int argc, char **argv) {
             cudaGraphicsMapResources(1, &resource, NULL);
             cudaGraphicsResourceGetMappedPointer((void**)&dev_ptr, &size, resource);
 
-            processInput(window);
             
             // draw fluid elements
             threads = DEFAULT_THREAD_NUM;

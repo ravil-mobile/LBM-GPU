@@ -11,3 +11,13 @@ sequential-LBM/debug/
 
 parallel-LBM/build/
 parallel-LBM/debug/
+
+*/GPATH
+*/GTAGS
+*/GRTAGS
+
+*/*/GPATH
+*/*/GTAGS
+*/*/GRTAGS
+
+*/bin

@@ -27,10 +27,9 @@ public:
     
     void InitDomainOnDevice(SimulationParametes &parameters,
                             int *flag_field);
-    
+    void UpdateFlagField (int* flag_field, unsigned int size);
     void AllocateFluidElementIndices(std::vector<int> indices);
     void AllocateSolidElementIndices(std::vector<int> indices);
-    
     void SwapPopulationFields();
     const Domain * GetDeviceData();
 private:

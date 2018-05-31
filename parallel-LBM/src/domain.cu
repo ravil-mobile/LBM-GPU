@@ -126,8 +126,17 @@ void DomainHandler::AllocateSolidElementIndices(std::vector<int> indices) {
                             cudaMemcpyHostToDevice));
 }
 
+void DomainHandler::UpdateFlagField (int* flag_field, unsigned int size) {
+
+    HANDLE_ERROR( cudaMemcpy(dev_domain.dev_flag_field,
+                             flag_field,
+                             size * sizeof(int),
+                             cudaMemcpyHostToDevice ) );
+}
+
 void DomainHandler::SwapPopulationFields() {
-    std::swap(dev_domain.dev_population, dev_domain.dev_swap_buffer);
+    std::swap(dev_domain.dev_population,
+              dev_domain.dev_swap_buffer);
 }
 
 const Domain * DomainHandler::GetDeviceData() {
