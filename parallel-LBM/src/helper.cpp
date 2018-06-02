@@ -534,4 +534,24 @@ void ComputeBlcoksDistr(struct CudaResourceDistr &blocks,
                                            parameters.num_lattices);
 }
 
+void DrawCircle(int x,
+                int y,
+                int marker,
+                int* flag_field,
+                const struct SimulationParametes &parameters) {
+    int width = parameters.width;
+    int radius = parameters.brush_size;
 
+    int center[] = {x, y};
+    for (int j = (center[1] - radius); j < (center[1] + radius); ++j) {
+        for (int i = (center[0] - radius); i < (center[0] + radius); ++i) {
+            real delta_x = real(center[0] - i);
+            real delta_y = real(center[1] - j);
+            real distance = sqrt(delta_x * delta_x + delta_y * delta_y);
+            if (real(radius) > distance) {
+                int index = GetIndex(i, j, width);
+                flag_field[index] = marker;
+            }
+        }
+    }
+}

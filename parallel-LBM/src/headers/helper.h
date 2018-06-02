@@ -63,6 +63,12 @@ void ComputeBlcoksDistr(struct CudaResourceDistr &blocks,
                         const struct SimulationParametes &parameters,
                         const struct BoundaryConditions *boudnaries);
 
+void DrawCircle(int x,
+                int y,
+                int marker,
+                int* flag_field,
+                const struct SimulationParametes &parameters);
+
 template<typename T>
 void PrintArray(T *array, int size) {
     for (int i = 0; i < size; ++i) {

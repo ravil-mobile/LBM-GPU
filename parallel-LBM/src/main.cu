@@ -28,87 +28,7 @@
 #include "headers/helper_cuda.h"
 
 #ifdef GRAPHICS
-
-const int SCR_HEIGHT = 630;
-const int SCR_WIDTH = 930;
-
-// store drawings on screen 
-std::vector<Point> draw_points;
-std::vector<Point> remove_points; 
-
-// HACK UPDATE FLAG FIELD 
-static bool add_obstacle = false; 
-static bool remove_obstacle = false;
-
-// process key inputs to close window
-void processInput (GLFWwindow* window) {
-	// if the escape key has been pressed
-	// otherwise glfwGetKey returns GFLW_RELEASE
-	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
-		glfwSetWindowShouldClose( window, true );
-	}
-}
-
-// Create frame resize callback function
-void framebuffer_size_callback( GLFWwindow* window, int height, int width) {
-	glViewport(0,0, width, height);
-}
-
-void mouse_press_callback (GLFWwindow* window, int button, int action, int mods) {
-  // Use this function to launch other functions when the
-  // mouse button is released
-  if (button == GLFW_MOUSE_BUTTON_LEFT) {
-    if ( action == GLFW_RELEASE ) {
-      // call some function here
-      /* 
-      for (const Point& i: draw_points)
-        {
-          
-          std::cout << "x ,y : " << i.x  << ", " << i.y << std::endl; 
-          }*/
-      // HACK UPDATE FLAG FIELD
-      add_obstacle = true;
-    }
-  }
-
-  else if (button == GLFW_MOUSE_BUTTON_RIGHT) {
-      if ( action == GLFW_RELEASE ) {
-        // call some function here
-      
-        for (const Point& i: draw_points)
-          {
-          
-            std::cout << "x ,y : " << i.x  << ", " << i.y << std::endl; 
-          }
-        // HACK UPDATE FLAG FIELD
-        remove_obstacle = true;
-      }
-    }
-}
-
-
-void cursor_pos_callback ( GLFWwindow* window, double x, double y)
-{
-  // store drag positions - check whether button is pressed or not 
-  int current_left_button_state = glfwGetMouseButton (window, GLFW_MOUSE_BUTTON_LEFT);
-  int current_right_button_state = glfwGetMouseButton (window, GLFW_MOUSE_BUTTON_RIGHT);
-
-  if ( current_left_button_state == GLFW_PRESS)
-    {
-      draw_points.push_back ( Point (x,y) ); 
-    }
-
-  else if ( current_right_button_state == GLFW_PRESS)
-    {
-      remove_points.push_back ( Point (x,y ) ); 
-    }
-}
-
-
-// global variables for cuda interop
-GLuint buffer_object;
-cudaGraphicsResource * resource;
-
+    #include "headers/graphics.h"
 #endif
 
 int main(int argc, char **argv) {
@@ -133,7 +53,6 @@ int main(int argc, char **argv) {
 
     static struct argp argp = {options, parse_opt, args_doc, doc};
     argp_parse (&argp, argc, argv, 0, 0, &arguments);
-
 
     ChooseGPU();
        
@@ -190,6 +109,7 @@ int main(int argc, char **argv) {
     CudaResourceDistr blocks_distr;
     ComputeBlcoksDistr(blocks_distr, threads_distr, parameters, boundaries); 
     
+    // DEFAULT_THREAD_NUM - optimal thread distribution per block for small kernels
     const int DEFAULT_THREAD_NUM = 128; 
     int threads = 0;
     int blocks = 0;
@@ -199,7 +119,11 @@ int main(int argc, char **argv) {
     glfwInit();
 
     // Create window 
-    GLFWwindow* window = glfwCreateWindow (SCR_WIDTH, SCR_HEIGHT, "Lattice Boltzmann", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(parameters.width,
+                                          parameters.height,
+                                          "Lattice Boltzmann",
+                                          NULL,
+                                          NULL);
 
     if (window == NULL) {
         std::cout << "ERROR: failed to create window." << std::endl; 
@@ -216,12 +140,12 @@ int main(int argc, char **argv) {
     }
     
     // first two paramters set location of left corner, other two are width and height	
-    glViewport(0,0, SCR_WIDTH, SCR_HEIGHT);
+    glViewport(0,0, parameters.width, parameters.height);
 	
     // Register call back function with glfw
-    glfwSetFramebufferSizeCallback( window, framebuffer_size_callback);
-    glfwSetMouseButtonCallback (window, mouse_press_callback);
-    glfwSetCursorPosCallback (window, cursor_pos_callback); 
+    glfwSetFramebufferSizeCallback( window, FramebufferSizeCallback);
+    glfwSetMouseButtonCallback (window, MousePressCallback);
+    glfwSetCursorPosCallback (window, CursorPosCallback); 
     // create buffer object to hold pixel data
     glGenBuffers(1, &buffer_object);
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, buffer_object);
@@ -361,97 +285,72 @@ int main(int argc, char **argv) {
 #ifdef GRAPHICS
         
         // HACK UPDATE FLAG FIELD
-        if (add_obstacle || remove_obstacle) {
-
-          int width = parameters.width;
-          int height = parameters.height;
-
-          for ( const Point& i: draw_points ) {
-
-            // invert domain 
-            int y = height - i.y;
-
-            // Create a solid line
-            int center[] = {i.x, y};
-            int radius = parameters.brush_size;
-
-            for (int j = (center[1] - radius); j < (center[1] + radius); ++j) {
-              for (int i = (center[0] - radius); i < (center[0] + radius); ++i) {
-                real delta_x = real(center[0] - i);
-                real delta_y = real(center[1] - j);
-                real distance = sqrt(delta_x * delta_x + delta_y * delta_y);
-                if (real(radius) > distance) {
-                  int index = GetIndex(i, j, width);
-                  if (add_obstacle) {
-                      flag_field[index] = WALL;
-                  }
-                  else {
-                      flag_field[index] = FLUID;
-                  }
+        if (obstacles_added || obstacles_removed) {
+            if (obstacles_added) { 
+                for (const Point& i: draw_points) {
+                    int y = parameters.height - i.y;
+                    DrawCircle(i.x, y, WALL, flag_field, parameters);           
                 }
-              }
+
+                draw_points.clear();
+                obstacles_added = false;
             }
-            //int index = GetIndex(i.x, y, width);
 
-            //flag_field [index] = WALL;
-          }
-          //          std::cout << draw_points.size() << std::endl;
+            if (obstacles_removed) {
+                for (const Point& i: remove_points) {
+                    int y = parameters.height - i.y;
+                    DrawCircle(i.x, y, FLUID, flag_field, parameters);           
+                }
 
-          if ( add_obstacle ) {
-              draw_points.clear();
-              add_obstacle = false;
-          }
-          else {
-            remove_points.clear();
-            remove_obstacle = false;
-          }
+                remove_points.clear();
+                obstacles_removed = false;
+            }
         
-          domain_handler.UpdateFlagField(flag_field, parameters.num_lattices); 
+            domain_handler.UpdateFlagField(flag_field, parameters.num_lattices); 
 
-          ScanFlagField(flag_field,
-                        domain_handler,
-                        bc_handler,
-                        parameters,
-                        constants,
-                        boundary_info);
+            ScanFlagField(flag_field,
+                          domain_handler,
+                          bc_handler,
+                          parameters,
+                          constants,
+                          boundary_info);
+        }
 
-          }
 
+        ProcessInput(window);
 
-            processInput(window);
-
-            threads = threads_distr.compute_velocity_magnitude;
-            blocks = blocks_distr.compute_velocity_magnitude;
-            ComputeVelocityMagnitude<<<blocks, threads>>>(domain->dev_velocity,
+        threads = threads_distr.compute_velocity_magnitude;
+        blocks = blocks_distr.compute_velocity_magnitude;
+        ComputeVelocityMagnitude<<<blocks, threads>>>(domain->dev_velocity,
                                                           domain->dev_velocity_magnitude);
 
-            cudaGraphicsMapResources(1, &resource, NULL);
-            cudaGraphicsResourceGetMappedPointer((void**)&dev_ptr, &size, resource);
+        cudaGraphicsMapResources(1, &resource, NULL);
+        cudaGraphicsResourceGetMappedPointer((void**)&dev_ptr, &size, resource);
 
             
-            // draw fluid elements
-            threads = DEFAULT_THREAD_NUM;
-            blocks = ComputeNumBlocks(threads, domain->num_fluid_elements);
-            DrawFluid<<<blocks, threads, 0, streams[4]>>>(dev_ptr,
-                                                          domain->dev_velocity_magnitude,
-                                                          domain->dev_fluid_indices,
-                                                          domain->num_fluid_elements);
-            CUDA_CHECK_ERROR();
-            // draw solid elements
-            threads = DEFAULT_THREAD_NUM;
-            blocks = ComputeNumBlocks(threads, domain->num_solid_elements);
-            DrawObstacles<<<blocks, threads, 0, streams[5]>>>(dev_ptr,
-                                                              domain->dev_solid_indices,
-                                                              domain->num_solid_elements);
-            CUDA_CHECK_ERROR();
+        // draw fluid elements
+        threads = DEFAULT_THREAD_NUM;
+        blocks = ComputeNumBlocks(threads, domain->num_fluid_elements);
+        DrawFluid<<<blocks, threads, 0, streams[4]>>>(dev_ptr,
+                                                      domain->dev_velocity_magnitude,
+                                                      domain->dev_fluid_indices,
+                                                      domain->num_fluid_elements);
+        CUDA_CHECK_ERROR();
+        // draw solid elements
+        threads = DEFAULT_THREAD_NUM;
+        blocks = ComputeNumBlocks(threads, domain->num_solid_elements);
+        DrawObstacles<<<blocks, threads, 0, streams[5]>>>(dev_ptr,
+                                                          domain->dev_solid_indices,
+                                                          domain->num_solid_elements);
+        CUDA_CHECK_ERROR();
             
-            SynchStreams<<<1,1>>>();
-            // unmap resources to synchronize between rendering and cuda tasks 
-            cudaGraphicsUnmapResources(1, &resource, NULL);
+        SynchStreams<<<1,1>>>();
+        // unmap resources to synchronize between rendering and cuda tasks 
+        cudaGraphicsUnmapResources(1, &resource, NULL);
 
-            glDrawPixels(parameters.width, parameters.height, GL_RGBA, GL_UNSIGNED_BYTE, 0);
-            glfwSwapBuffers(window);
-            glfwPollEvents(); 
+        glDrawPixels(parameters.width, parameters.height, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+        glfwSwapBuffers(window);
+        glfwPollEvents(); 
 #endif
     
     }
