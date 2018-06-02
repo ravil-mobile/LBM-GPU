@@ -2,22 +2,8 @@
 #include<GLFW/glfw3.h>
 #include<cuda_gl_interop.h>
 
-#include "cublas_v2.h"
-#include <cuda_runtime.h>
-
-#include <stdlib.h>
-#include <algorithm>
-#include <iostream>
 #include <vector>
-
-#include "headers/parameters.h"
-#include "headers/scanning.h"
-#include "headers/boundary_conditions.h"
 #include "headers/helper.h"
-#include "headers/kernels.h"
-#include "headers/domain.h"
-#include "headers/helper_cuda.h"
-#include "headers/graphics.h"
 
 // store drawings on screen 
 std::vector<Point> draw_points;
