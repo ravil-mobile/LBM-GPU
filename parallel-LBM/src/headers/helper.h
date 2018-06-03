@@ -39,9 +39,9 @@ struct Point {
 
 int parse_opt(int key, char *arg, struct argp_state *state);
 
-bool isSpace (const std::string& str);
+bool isSpace(const std::string& str);
 
-bool predicate (const std::string& line);
+bool predicate(const std::string& line);
 
 void ReadParameterFile(const char *parameter_file,
                        struct SimulationParametes &parameters);

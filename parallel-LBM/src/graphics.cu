@@ -1,3 +1,5 @@
+#ifdef GRAPHICS
+
 #include<GL/glew.h>
 #include<GLFW/glfw3.h>
 #include<cuda_gl_interop.h>
@@ -18,16 +20,16 @@ cudaGraphicsResource *resource;
 
 // process key inputs to close window
 void ProcessInput (GLFWwindow* window) {
-	// if the escape key has been pressed
-	// otherwise glfwGetKey returns GFLW_RELEASE
-	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
-		glfwSetWindowShouldClose( window, true );
-	}
+    // if the escape key has been pressed
+    // otherwise glfwGetKey returns GFLW_RELEASE
+    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
+        glfwSetWindowShouldClose( window, true );
+    }
 }
 
 // Create frame resize callback function
 void FramebufferSizeCallback(GLFWwindow* window, int height, int width) {
-	glViewport(0,0, width, height);
+    glViewport(0,0, width, height);
 }
 
 void MousePressCallback (GLFWwindow* window, int button, int action, int mods) {
@@ -62,3 +64,4 @@ void CursorPosCallback(GLFWwindow* window, double x, double y) {
         remove_points.push_back(Point(x, y)); 
     }
 }
+#endif

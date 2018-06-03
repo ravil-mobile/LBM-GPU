@@ -27,9 +27,9 @@
 #include "headers/domain.h"
 #include "headers/helper_cuda.h"
 
-#ifdef GRAPHICS
+//#ifdef GRAPHICS
     #include "headers/graphics.h"
-#endif
+//#endif
 
 int main(int argc, char **argv) {
 
@@ -368,8 +368,10 @@ int main(int argc, char **argv) {
     printf("MLUPS: %4.6f\n", MLUPS);
 
     // free HOST recourses
+#ifdef GRAPHICS
     cudaGraphicsUnregisterResource(resource);
     glfwTerminate();
+#endif
     cublasDestroy(handle);
     free(flag_field);
 

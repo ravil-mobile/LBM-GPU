@@ -9,7 +9,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <argp.h>
-
+#include <sstream>
 #include "headers/parameters.h"
 #include "headers/helper.h"
 #include "headers/boundary_conditions.h"
