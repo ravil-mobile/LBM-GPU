@@ -1,0 +1,22 @@
+ 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%MISCELLANEOUS STUFF
+%TODO: Find a place for this stuff
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Miscellaneous}
+
+\begin{frame}{Register Usage Optimization}
+\begin{enumerate}
+	\item Split your kernels if you can. For example, represent and calculate colors for fluid and wall separately.
+    
+    \pause
+    
+    \item Use data types that take less space. For example, \texttt{\color{blue}short} instead of \texttt{\color{blue} int}. 
+\end{enumerate}
+
+\begin{figure}
+\begin{center}
+	\includegraphics[scale=0.5]{images/short_instead_of_int.png}
+\end{center}
+\end{figure}
+\end{frame}

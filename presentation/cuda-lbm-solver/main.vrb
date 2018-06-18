@@ -1,0 +1,37 @@
+\frametitle{Branch Divergence }
+Let's compare two implementations of the same algorithm: \textbf{without branching}
+\begin{scriptsize}
+\begin{lstlisting}
+__global__ void UpdateVelocityFieldDevice_A(real *velocity,
+                                            real *population,
+                                            real *density,
+                                            int *flag_field,
+                                            int *fluid_indices, // additional parameter
+                                            int num_fluid_lattices) {
+    int num_lattices = parameters_device.num_lattices;
+    short int num_directions = parameters_device.discretization;
+
+    int thread_id = threadIdx.x + blockIdx.x * blockDim.x;
+    while (thread_id < num_fluid_lattices) {
+        int index = fluid_indices[thread_id]; // it leads to indirect addressing
+
+        real lattice_velocity_x = 0.0;
+        real lattice_velocity_y = 0.0;
+
+        for (short int component = 0; component < num_directions; ++component) {
+            real distribution = population[component * num_lattices + index];
+            lattice_velocity_x += coords_device[component] * distribution;
+            lattice_velocity_y += coords_device[num_directions + component] * distribution;
+        }
+
+        real inverse_density = 1.0 / density[index];
+        velocity[index] = inverse_density * lattice_velocity_x;
+        velocity[num_lattices + index] = inverse_density * lattice_velocity_y;
+
+        thread_id += blockDim.x * gridDim.x;
+    }
+}
+
+\\ MLUPS: 42.22 | 18.44  [float | double] (GeForce 610M)
+\end{lstlisting}
+\end{scriptsize}

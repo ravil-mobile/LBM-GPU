@@ -1,0 +1,13 @@
+\BOOKMARK [2][]{Outline0.1}{Theory}{}% 1
+\BOOKMARK [3][]{Outline0.1.1.12}{Discretization}{Outline0.1}% 2
+\BOOKMARK [3][]{Outline0.1.2.19}{From Mesoscopic to Macroscopic}{Outline0.1}% 3
+\BOOKMARK [3][]{Outline0.1.3.22}{LBM "Pipeline"}{Outline0.1}% 4
+\BOOKMARK [3][]{Outline0.1.4.29}{Boundary conditions}{Outline0.1}% 5
+\BOOKMARK [2][]{Outline0.2}{Results}{}% 6
+\BOOKMARK [2][]{Outline0.3}{Performance}{}% 7
+\BOOKMARK [2][]{Outline0.4}{CUDA Optimization and Memory}{}% 8
+\BOOKMARK [2][]{Outline0.5}{Coalesced Memory Access}{}% 9
+\BOOKMARK [2][]{Outline0.6}{Branch divergence within a warp}{}% 10
+\BOOKMARK [2][]{Outline0.7}{Asynchronous kernel launch}{}% 11
+\BOOKMARK [2][]{Outline0.8}{OpenGL}{}% 12
+\BOOKMARK [2][]{Outline0.9}{Bibliography}{}% 13

@@ -1,0 +1,13 @@
+\beamer@sectionintoc {1}{Theory}{3}{0}{1}
+\beamer@subsectionintoc {1}{1}{Discretization}{12}{0}{1}
+\beamer@subsectionintoc {1}{2}{From Mesoscopic to Macroscopic}{19}{0}{1}
+\beamer@subsectionintoc {1}{3}{LBM "Pipeline"}{22}{0}{1}
+\beamer@subsectionintoc {1}{4}{Boundary conditions}{29}{0}{1}
+\beamer@sectionintoc {2}{Results}{56}{0}{2}
+\beamer@sectionintoc {3}{Performance}{58}{0}{3}
+\beamer@sectionintoc {4}{CUDA Optimization and Memory}{65}{0}{4}
+\beamer@sectionintoc {5}{Coalesced Memory Access}{74}{0}{5}
+\beamer@sectionintoc {6}{Branch divergence within a warp}{98}{0}{6}
+\beamer@sectionintoc {7}{Asynchronous kernel launch}{120}{0}{7}
+\beamer@sectionintoc {8}{OpenGL}{139}{0}{8}
+\beamer@sectionintoc {9}{Bibliography}{143}{0}{9}

@@ -169,6 +169,9 @@ int main(int argc, char **argv) {
     for (int i = 0; i < NUM_STREAMS; ++i)
         cudaStreamCreate(&streams[i]);
 
+
+    // for recording purposes
+    //    getchar();
     // prepare timers
     cudaEvent_t start, stop;
     cudaEventCreate(&start);
